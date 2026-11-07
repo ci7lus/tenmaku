@@ -1,0 +1,192 @@
+# macOS privacy app specification
+
+First draft 2026-11-06. Revised on 2026-11-08 to reflect the verification results and the user's decisions.
+
+This document records the approved requirements and acceptance criteria. See the [verification summary](VERIFICATION_SUMMARY.md) and [verification record](VERIFICATION.md) for the results.
+
+## Purpose and scope
+
+Allow Codex or Claude to capture and control the logged-in desktop while the user is away from the Mac. People at the Mac must be unable to read the desktop on any connected physical display or control it with any covered physical input.
+
+The app lock hides physical displays and blocks covered physical input while the macOS user session stays unlocked. The app is locked when both protections are active and Codex and Claude can operate the same session in the tested environment. Under a macOS session lock, macOS blocks access to the desktop and requires system authentication to return.
+
+### Scope
+
+- Physical displays include every built-in and external display that can show the target session. Extended displays are in scope. Mirroring is a TODO, so the app does not start a lock while mirroring is active. A lock must cover every display.
+- Physical input includes normal input from built-in and external keyboards, mice, and trackpads. It covers key presses and releases, modifiers, key repeat, pointer movement, button presses and releases, dragging, and scrolling, including trackpad momentum.
+- Support for power controls, system keys handled outside normal keyboard input, dedicated multitouch gestures, pen tablets, and similar input remains undecided. If an out-of-scope action can expose or control the desktop, document the supported scope and the remaining limitations.
+- Setting display brightness to 0 and closing a laptop lid are outside the scope.
+- The lock prevents people at the Mac from seeing or controlling the desktop. Authorized capture paths receive the desktop contents. Restricting capture by other processes or over the network is outside the scope.
+
+## Requirements
+
+| ID | Requirement |
+| --- | --- |
+| R1 | The user can start the lock from the app. Before reporting that the app is locked, the app verifies the display configuration, required permissions, input filtering, and display concealment. It maintains both protections even when the UI is in the background. The app claims support only for tested configurations. |
+| R2 | In normal operation, the app hides the output on the target displays using gamma. An optional setting combines gamma with full-display concealment windows that stay out of captures. Authorized capture paths must omit the concealment windows and still capture the windows beneath them. Text, windows, and other desktop contents must be indistinguishable on physical displays even with a bright test pattern. The mouse pointer's position and movement may remain visible. |
+| R3 | While locked, covered physical input cannot operate apps or the system, move the pointer, or unlock the app. Any input accepted for unlock authentication must stay within the authentication path and never reach the desktop. Passing through covered events that the app cannot distinguish from authorized input is prohibited. If the app cannot distinguish the events, that combination is unsupported. For configurations without a helper that seizes physical devices, document the inability to stop physical keystrokes while Secure Event Input is active. |
+| R4 | While locked, actual screenshots, video frame updates, clicks, keystrokes, and scrolling work in both Codex and Claude. Determine support for each app, version, control path, permission set, and display configuration. |
+| R5 | For a normal unlock, keep the desktop hidden and input blocked until the app confirms that the user authenticated for the current request. After successful authentication, remove the protections and show the same desktop again. Keep the macOS session unlocked throughout. Accepting an unlock request, quitting or restarting the app, or using only the operations authorized for Codex or Claude cannot authorize an unlock. |
+| R6 | If the app detects a loss of display concealment or input blocking, or can no longer verify either protection, it stops displaying or reporting the locked state. If the fault occurs while locked, keep the remaining protections in place and follow the failure behavior below. |
+
+### Configurations and limitations
+
+The user can choose independently whether to use the helper and concealment windows. Evaluate each combination of the two options separately and document the support and limitations for each.
+
+| Configuration | Limitations to document |
+| --- | --- |
+| Without the helper | While Secure Event Input is active, such as in masked fields or with Secure Keyboard Entry in Terminal, the app cannot block physical keystrokes. |
+| Without concealment windows | Gamma alone protects the displays. Display reconfiguration or the exit of a process that set gamma, including one outside this app, can reset gamma and expose the contents. |
+
+Apple documents the concealment windows' `NSWindow.sharingType = .none` setting as legacy. Let users disable the windows in case a future macOS release includes them in captures.
+
+In a failure, keeping the desktop contents off the physical displays takes priority over continued capture and control. The capture may show the concealment windows or stop entirely.
+
+Restore gamma on the displays the app changed. If the display configuration or color profile changed, restore the settings in effect at the time of the unlock. Never apply values for a different display or a previous configuration. After unlocking, verify that display colors and normal input return on the same desktop.
+
+## Start, Unlock, and Failure Handling
+
+Before changing the displays or input, check for any missing permissions and unsupported conditions that can be detected in advance. The user may leave after the app reports the locked state. If start is canceled before either protection changes, keep the app unlocked and report why. If start fails partway through, track the changes already applied and withhold the locked status. Require unlock authentication before showing a hidden desktop or restoring input that was blocked. Apply the same rule when the app cannot tell which changes took effect.
+
+The authentication result must belong to the app lock and target session in effect when the request was made. A success received after cancellation or for an earlier request cannot unlock the app. Apply this rule even if the UI restarts.
+
+If a user action or macOS setting locks the session, treat it as an interruption. Clear the locked status and invalidate any active unlock request. Once the user authenticates with macOS and returns to the target session, recheck display concealment and input blocking. The app can return to the locked state after both checks pass. Logging in again or unlocking the macOS session does not authenticate an app unlock.
+
+| Situation | Required behavior |
+| --- | --- |
+| Normal unlock | Keep the desktop hidden and input blocked until authentication succeeds. Then restore the display and input in the same session. Discard authentication input and any input blocked during the lock so it never reaches the desktop. |
+| App lock start request fails | This includes a rejected request, no response, or an inability to verify concealment or input blocking. Report the start failure and recover any partially applied changes under the conditions above. |
+| Unlock authentication fails | This includes authentication failure, cancellation, unavailability, and timeout. Keep display concealment and input blocking in place and report the failed unlock in the app state. Each retry requires successful authentication for that request. If Touch ID is unavailable, such as after exceeding the attempt limit, request a macOS session lock. If the lock can be verified, end the app lock and leave the app unlocked after the user authenticates with macOS. If the app keeps its lock because it cannot verify the session lock, handle the user's return as a return from a session lock and require a new Touch ID unlock. |
+| Input filter stops | This covers disabling the filter, timeout, permission revocation, and a filter that stops processing. Keep the displays hidden and clear the locked status. Return to the locked state if input blocking can be reestablished. If any covered input gets through between the failure and recovery, the test fails even if the filter recovers. When the helper stops, detect the failure and request a macOS session lock. Document that physical input can pass through between the helper's exit and the lock request. |
+| UI crashes | Keep any working display concealment and input filtering in place if the UI is lost. If either protection also fails, follow the failure behavior for that protection. When the UI restarts, check the current state. Restarting the UI cannot authorize an unlock. |
+| Gamma process exits | Handle normal and forced termination of the process that sets and maintains gamma separately. A planned exit goes through the normal unlock. The process that detects an unexpected exit clears the locked status and keeps remaining input blocking in place. Whether the exit removes concealment and whether protection can stay in effect before concealment is lost remain design questions. The test fails if desktop contents are visible between the exit and recovery. |
+| Displays reconfigure | This covers connecting and disconnecting displays, switching between extended and mirrored modes, changing resolution or HDR, and waking from sleep. If mirroring starts, report the unsupported configuration and keep the remaining protections in place. Discard concealment verification from the previous configuration and identify the target displays again. Keep input blocked and the remaining displays hidden. Return to the locked state once all target displays are hidden again. If concealment cannot be established, report that state and keep the remaining protections in place. The test fails if any display shows desktop contents during reconfiguration. |
+
+Whether public APIs alone can prevent exposure or unwanted input when a display restores before the fault is detected or when input gets through as the filter stops remains unverified. If a fault stops several functions, apply the acceptance criteria for each affected function. Support for simultaneous failures of independent processes remains undecided.
+
+## Acceptance Tests
+
+Use a test session with no confidential information. Before locking, verify that the physical displays show the test pattern and that covered physical input and each client operation work. While locked, record each physical display with an external camera and assess those recordings separately from the client captures. Use a camera that records at about 120 frames per real-time second or faster, such as a phone in slow-motion mode. For each trial, record a known brief flash to verify that the camera detects it and record the shortest detectable duration. A visual check in which no red was seen does not establish that there was no exposure.
+
+For tests with real clients, package the interactive test window as an app. Grant any permissions the clients request on first interacting with that window before starting the lock.
+
+### Codex and Claude operations
+
+Run each operation in both Codex and Claude and assess each row separately. In A03 to A05, perform the same kind of action on a physical device at the same time, with a distinguishable result. The test passes only if the client's action is the only one that takes effect. If a product or version lacks a feature, mark it unsupported. Tests with another app or synthetic events alone do not count.
+
+| ID | Action | Acceptance criterion |
+| --- | --- | --- |
+| A01 | Take a screenshot. Add a new marker to the screen after starting the lock. | Each client's capture shows the new marker clearly, while the marker is indistinguishable on the corresponding physical display. |
+| A02 | Capture through the video path. Update a sequence number on the screen while locked. | Multiple frames received by each client show different numbers generated after the lock started, in order. A persistent black frame or a still image from before the lock fails the test. |
+| A03 | Click a test button. | Only the designated button responds and its click count increases by 1. |
+| A04 | Enter a test string in a field and perform a test action with a modifier key. | The string appears once in the designated field and the test action takes effect. The modifier does not remain pressed. |
+| A05 | Scroll a scrollable region up and down. | The designated region moves in the specified direction and shows different markers. |
+
+### Lock and failure tests
+
+| ID | Action | Acceptance criterion |
+| --- | --- | --- |
+| A06 | Start the lock in the app and move its UI to the background. In each supported configuration, including built-in display only and extended external displays, test with and without concealment windows. Set the brightness to its highest available level and show high-contrast text and a moving pattern. | The contents are indistinguishable on all target physical displays and gamma concealment stays active. With concealment windows enabled, authorized capture paths omit those windows and still capture the windows beneath them. |
+| A07 | Try each kind of covered physical input with actual built-in and external devices. Also hold keys or buttons across both the start and the end of a lock. | Covered input has no effect on input fields, click counts, pointer position, drop targets, scroll position, or system state. After unlock, no blocked input carries over and no key or button remains pressed. |
+| A08 | Test a rejected start request, a request with no response, and a request with an unsupported display configuration separately. Also inject an error after applying only display concealment or only input blocking. | The app does not report that it is locked and makes the failure reason available. If it fails before making changes, the displays and input work normally. If it fails partway through, it keeps each protection already applied until unlock authentication succeeds. |
+| A09 | Request an app unlock, wait without authenticating, then authenticate successfully. Check whether covered physical input reaches the desktop during authentication. | The desktop stays hidden on physical displays and covered physical input has no effect until unlock authentication succeeds. Then the displays and input return in the same desktop without a macOS session lock. Authentication input and blocked input never reach the desktop. |
+| A10 | Separately trigger authentication failure, cancellation, unavailability, and timeout. Test a success result that arrives late for a canceled request and attempts to unlock using only Codex or Claude operations. | Display concealment and input blocking remain in place. The desktop reappears only after successful authentication for the current unlock request. |
+| A11 | Stop the input filter while locked. Test disabling the filter, timing it out, and revoking its permissions separately. Repeat covered physical input before and after each failure. In the helper configuration, force-quit the helper. | Display concealment stays in place and the app clears the locked status. Between failure and recovery, covered input never affects the desktop. For helper failure, detect that the helper stopped, request a macOS session lock, and record any physical input that passed between the failure and the request. |
+| A12 | Force-quit only the UI while locked, then restart it. | Display concealment and input blocking continue uninterrupted, and the restarted UI shows the actual state. If the configuration loses another protection when the UI exits, also run the corresponding failure test. |
+| A13 | Test normal and forced termination of the gamma process separately. For forced termination, observe each display and physical input starting just before termination. | Normal termination follows the sequence in A09. Even after forced termination, the desktop never becomes visible and covered input has no effect. The app does not rely on the state before termination to keep reporting that it is locked. |
+| A14 | Reconfigure the displays while locked. Test each action separately and observe newly connected displays from the moment they first light up. | No display shows desktop contents and covered input does not pass through. If concealment recovers, repeat A01 to A07 as applicable to the configuration. If it cannot recover, the app reports the condition and keeps the remaining protections in place. |
+| A15 | While the app is locked, lock the macOS session through a user action and authenticate with macOS to return to the same session. | The app clears its locked status during the interruption. macOS authentication leaves the app lock active. When the session resumes, the desktop stays hidden on physical displays and covered input remains blocked. Return to the locked state only after rechecking both display concealment and input blocking. |
+| A16 | Run this test if the app falls back to a macOS session lock in a failure. Test each case separately. Include a fault where concealment stays active, one where it can fail first, rejection or no response to a lock request, a missing or delayed confirmation, a notification for a different session, and an immediate unlock after confirmation. | The app removes remaining protections only after verifying that the target session is locked. If it cannot verify the lock, it keeps those protections. From the failure through the handoff, physical displays never show the desktop and covered input never affects the desktop. After handoff, macOS authentication is required. |
+| A17 | Run this test when working on password unlock (TODO). Start password authentication with a candidate that uses full-display concealment windows. Test the planned display configurations with a normal desktop, another Space, and a full-screen app in the foreground. | The macOS authentication dialog appears in front of the concealment windows, so the user can verify the authentication target and enter credentials. Desktop contents remain hidden on all physical displays. |
+| A18 | Run this test when working on password unlock (TODO). Use an external camera to record the switch from gamma concealment to concealment windows, successful authentication, and the return to gamma concealment after failure, cancellation, or timeout. Force-quit each process that manages a concealment window individually during the switch to windows, while awaiting authentication with gamma restored, and while switching back to gamma concealment. | No desktop contents appear on any physical display at any time before successful authentication. After failure, cancellation, or timeout, gamma concealment becomes active before the windows are removed. Any exposure between forced termination and recovery fails the test. |
+| A19 | Run this test when working on password unlock (TODO). Use test credentials and observe where authentication input goes as well as a test input field on the desktop. Test loss of focus, cancellation during input, and unexpected termination of the authentication UI separately. | Authentication input reaches only the OS authentication UI. After focus is lost or authentication ends, authentication keystrokes and actions never reach the desktop or other apps and never carry over when input resumes. |
+
+For each test, record the test ID, tester, date and time, macOS version and build, Mac model, displays and connection types, display mode, input devices, permissions, client products and versions, procedure, evidence, observation limits, and result. Distinguish pass, fail, not run, inconclusive, and unsupported. Define the observation method and criteria in advance for determining whether a failure exposed the desktop or let input through. Insufficient evidence is inconclusive. Claim support only after all required tests pass in that environment.
+
+To decide whether simultaneous failures of independent processes are in scope, observe physical display exposure and input passthrough from outside the app when gamma maintenance, input blocking, and fault detection stop together. Record this result separately from individual failure tests.
+
+## Open decisions and design questions
+
+| Item | Remaining checks and decisions |
+| --- | --- |
+| Repository license | Mozilla Public License 2.0. The user chose it on November 8, 2026. See the full text in [LICENSE](../LICENSE). |
+| Distribution | Sign with Developer ID and notarize before distributing. Register the helper as a root daemon with `SMAppService.daemon`. Embed the helper as a separate app inside the main app and have the daemon run its executable. During setup, the user approves the daemon in Login Items and the main app launches the helper as the user to request Input Monitoring permission. A running daemon does not pick up permission changes, so restart it when permission changes. Connect the main app and helper over XPC and require each side to verify a signature from the same team. Sandbox behavior remains unverified. |
+| Supported environments | The newest API used in the implementation determines the minimum macOS version. Support for Intel Macs depends on whether that version runs on Intel. Report Mac models, display modes, Codex and Claude products and versions, and physical input devices as tested configurations. The SDK version below is the one used when checking the references. |
+| Gamma concealment and capture | Tests in limited conditions confirmed that Codex and Claude could capture and control the desktop with gamma and concealment windows in use. HDR, wake from sleep, video with both displays protected, and the Claude video path remain unverified. |
+| Distinguishing input | A helper that seizes physical devices can separate physical input from Codex and Claude operations without using source PIDs. The Distribution row describes how to install the helper. Keys other than Space, modifiers, scrolling, and held inputs carrying over remain unverified. |
+| App unlock authentication | Touch ID is the only initial unlock method. Password unlock is a TODO. A physical key received by the helper triggers the unlock request, and the helper keeps the key from reaching the desktop. For fallback to a macOS session lock when Touch ID is unavailable, verify the session lock using undocumented keys. See [Fallback to macOS Session Lock](#fallback-to-macos-session-lock). |
+| Lock behavior in a failure | Check whether exposure or input passthrough occurs before detection, including when the UI, input filter, and gamma process are all lost. The scope of simultaneous failures of independent processes, time limits for detection and retry, recovery after partial application, values to restore on display reconfiguration, and detection limits for brief exposures remain undecided. |
+
+Keep each question open until evidence shows that public APIs can meet the requirement. Exclude private APIs, unpublished notifications and dictionary keys, and the internals of existing apps. The dictionary key used to verify the session lock is the only exception. Keep concealment in place if the key cannot be read. See [Fallback to macOS Session Lock](#fallback-to-macos-session-lock).
+
+### Unlock authentication while displays are hidden
+
+Password unlock is out of scope for now (TODO). The password path in this section and the next is for consideration when that work starts.
+
+| Authentication method | What public APIs support | What to verify in A09 and A10 |
+| --- | --- | --- |
+| Touch ID | Pass `.deviceOwnerAuthenticationWithBiometrics` to `LAContext.evaluatePolicy` to request biometric authentication and get the result. Authentication fails if Touch ID is unavailable, not enrolled, or locked out. Keep the default reuse duration of 0 for a previous macOS Touch ID unlock. | Can the user request an unlock while concealment is active and complete Touch ID authentication without seeing the dialog? Test built-in sensors and supported external keyboards separately. Verify that the app stays locked if Touch ID is not enrolled, Touch ID is locked out, the user cancels, or the user waits without touching the sensor. |
+| Mac login password | `.deviceOwnerAuthentication` can accept the login password in the OS authentication dialog. Depending on the configuration, Touch ID or Apple Watch may also satisfy the policy. Confirm that the password path test actually uses the password. Gamma tables apply per display. No public way to exclude only the authentication window has been confirmed. | Can the user verify the authentication target and state with the desktop hidden and enter the password only into the OS authentication UI? Verify that the input never leaks to the desktop if focus is lost or authentication ends. Also verify that capture and control during authentication cannot access the credentials. |
+
+For the Touch ID test, accept a dedicated unlock action without passing it to the desktop. Start authentication with a fresh `LAContext` for that request. If the system needs an interactive UI, suppressing it with `interactionNotAllowed` causes authentication to fail. Use real hardware to determine whether the user can complete authentication with the dialog hidden.
+
+The password path fails if the user must enter input without verifying its destination, or if the method stops the entire input filter.
+
+### Candidate for full-display windows during authentication
+
+This candidate remains untested on real hardware and adoption is undecided. During password unlock testing only, hide the desktop with opaque full-display windows in place of gamma concealment.
+
+1. Keep gamma concealment and input blocking active and show concealment windows on the displays whose gamma will be restored.
+2. Restore gamma after the windows cover those displays. Check whether the macOS authentication dialog can appear in front of the windows. Keep gamma concealment on the other displays. Route only input required for authentication to the authentication UI.
+3. After successful authentication, remove the concealment windows and restore normal input. After failure, cancellation, or timeout, reestablish gamma concealment before removing the windows and keep input blocked.
+
+Public AppKit APIs let an app set the stacking order of its own concealment windows. No public method has been confirmed for choosing where the macOS authentication dialog appears or controlling its stacking order relative to those windows. Use A17 to A19 to assess dialog placement, exposure during switching and crashes, and authentication input leaks separately.
+
+If the only concealment window disappears after gamma is restored, the desktop can remain exposed until concealment recovers. XPC interruption notifications arrive after the process exits. Reapplying gamma in response to the notification cannot guarantee coverage before the window disappears. No public API has been confirmed for registering the loss of the concealment window and reapplication of gamma as one atomic operation. The `CGCompleteDisplayConfiguration` transaction covers display configuration and does not track the lifetime of AppKit concealment windows. [NSXPCConnection.interruptionHandler](https://developer.apple.com/documentation/foundation/nsxpcconnection/interruptionhandler?language=objc), [CGCompleteDisplayConfiguration](https://developer.apple.com/documentation/coregraphics/cgcompletedisplayconfiguration%28_%3A_%3A%29)
+
+To cover a single process crash, one candidate shows two opaque concealment windows managed by separate processes before restoring gamma. Each window must cover the entire display on its own so that one remains after the other process crashes, without waiting for failure detection. Verify this on real hardware under A17 and A18, including whether the authentication dialog can appear in front of both windows. A shared failure that removes both windows can still expose the desktop. Leave the password unlock approach that restores gamma on hold until testing confirms that a single crash causes no exposure.
+
+### Fallback to macOS Session Lock
+
+Hand off from the app lock to the macOS session lock if the helper stops or Touch ID is unavailable. Keep the remaining protections until the target session lock is verified, then end the app lock. Keep the remaining protections if handoff fails or verification is unavailable. If concealment or input blocking has already failed, a later session lock cannot prevent exposure or input during the gap, so start judging A16 from the moment the failure occurs.
+
+- macOS documents Control-Command-Q as the screen lock shortcut. Sending its key events through the public `CGEventPost` API is a test candidate. The API contract does not guarantee that macOS handles synthetic input as a lock action or that the lock takes effect. Include the target session, event posting permissions, and active input filter in hardware tests. The reference and SDK review did not find a public API that lets an ordinary app lock the target session directly.
+- Endpoint Security's `ES_EVENT_TYPE_NOTIFY_LW_SESSION_LOCK` requires an entitlement from Apple and is excluded.
+- Verify a session lock only if both sources report that the target session is locked. The helper reads `CGSSessionScreenIsLocked` from `IOConsoleUsers` at the IORegistry root and the app reads the same key from `CGSessionCopyCurrentDictionary`. The functions are public APIs. The key name is undocumented. If the key changes in a future macOS release, verification fails and the app keeps concealment in place. Document this limitation. Exclude the distributed notification `com.apple.screenIsLocked` from verification because its name is undocumented and it may be missed. Event delivery or a session switch notification alone does not establish that the lock took effect.
+
+Once the app verifies the session lock, it may remove concealment so the lock screen becomes visible. Until then, keep all remaining protections in place. The two keys change before the lock screen is drawn, and removing concealment based on the keys alone exposed the desktop. Remove concealment only after all three conditions are met.
+
+1. Both keys report that the target session is locked.
+2. The full-display `loginwindow` window found through `CGWindowListCopyWindowInfo` has opacity 1. The window was at layer 2001 in the test. Its meaning is undocumented, so document the same limitation as for the keys.
+3. At least 1.5 seconds have passed since both keys reported the lock.
+
+The lock screen stays dark until the app removes concealment. Variation in fade-in time, external display behavior, and how to handle an indefinite wait remain unverified. Verification criteria for the configuration without the helper remain undecided. If the app cannot verify the lock screen, the lock screen stays hidden. Test a user-initiated macOS session lock and return separately in A15.
+
+## References and Independent Implementation
+
+Codex wrote the specification. On 2026-11-06, Codex consulted the user requirements in this request, the Apple public documentation below, and public declarations from the local SDK. A Claude Code session revised the specification on 2026-11-08 based on the user's decisions and real hardware observations from independently written test programs that use public APIs. See the [verification record](VERIFICATION.md).
+
+| Source | Material reviewed and version |
+| --- | --- |
+| User's specification instructions | Requirements and independent implementation boundaries given in this request. |
+| Public macOS SDK headers | macOS SDK 27.2, Xcode 27.2 (27B52). CoreGraphics `CGDirectDisplay.h`, `CGDisplayConfiguration.h`, `CGEvent.h`, `CGEventTypes.h`, and `CGSession.h`. LocalAuthentication `LAContext.h`. EndpointSecurity `ESClient.h`, `ESMessage.h`, and `ESTypes.h`. |
+| Apple display APIs | Reading and writing gamma tables, restoring ColorSync settings, enumerating displays, and reconfiguration notifications. The documentation does not show a version. Checked 2026-11-06. [Quartz Display Services](https://developer.apple.com/documentation/coregraphics/quartz-display-services), [CGDisplayReconfigurationCallBack](https://developer.apple.com/documentation/coregraphics/cgdisplayreconfigurationcallback) |
+| Apple input APIs | Filter creation and enabled state, available event fields, and event source state. The documentation does not show a version. Checked 2026-11-06. [CGEventTapCreate](https://developer.apple.com/documentation/coregraphics/cgevent/tapcreate%28tap%3Aplace%3Aoptions%3Aeventsofinterest%3Acallback%3Auserinfo%3A%29?language=objc), [CGEventField](https://developer.apple.com/documentation/coregraphics/cgeventfield), [CGEventSourceStateID](https://developer.apple.com/documentation/coregraphics/cgeventsourcestateid) |
+| Apple capture APIs | Public APIs for still capture and streams. The internal paths that Codex and Claude use are outside the scope of these references. The documentation does not show a version. Checked 2026-11-06. [ScreenCaptureKit](https://developer.apple.com/documentation/screencapturekit) |
+| Apple app authentication APIs | Authentication requests and results, Touch ID reuse, and behavior when the interactive UI cannot be shown. The documentation does not show a version. Checked 2026-11-06. [LAContext](https://developer.apple.com/documentation/localauthentication/lacontext), [LAPolicy.deviceOwnerAuthentication](https://developer.apple.com/documentation/localauthentication/lapolicy/deviceownerauthentication), [Touch ID reuse duration](https://developer.apple.com/documentation/localauthentication/lacontext/touchidauthenticationallowablereuseduration) |
+| Apple window management APIs | The stacking order of app windows and behavior in Spaces and full-screen mode. The documentation does not show a version. Checked 2026-11-06. [NSWindow.level](https://developer.apple.com/documentation/appkit/nswindow/level-swift.property), [NSWindow.CollectionBehavior](https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct) |
+| Apple session information and lock controls | Session switch notifications, public dictionary properties, and how a user locks and unlocks a macOS session. API documentation checked 2026-11-06. Mac User Guide for macOS 27. [NSWorkspaceSessionDidResignActiveNotification](https://developer.apple.com/documentation/AppKit/NSWorkspace/sessionDidResignActiveNotification?language=objc), [Window Server Session Properties](https://developer.apple.com/documentation/coregraphics/window-server-session-properties?language=objc), [Lock the screen of your Mac](https://support.apple.com/en-ie/guide/mac-help/mchl8e8b6a34/27/mac/27) |
+| Apple event posting and lock notifications | Event posting, the screen lock shortcut, and Endpoint Security lock notifications and requirements. The documentation does not show a version. Checked 2026-11-06. [CGEventPost](https://developer.apple.com/documentation/coregraphics/cgevent/post%28tap%3A%29?language=objc), [Mac keyboard shortcuts](https://support.apple.com/en-us/102650), [Session lock notification](https://developer.apple.com/documentation/endpointsecurity/es_event_lw_session_lock_t), [Create an Endpoint Security client](https://developer.apple.com/documentation/endpointsecurity/es_new_client%28_%3A_%3A%29), [Entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.endpoint-security.client) |
+| Apple helper registration and connection | Daemon registration and user approval, and requiring a signature from XPC peers. Checked 2026-11-08. [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice), [NSXPCConnection.setCodeSigningRequirement](https://developer.apple.com/documentation/foundation/nsxpcconnection/setcodesigningrequirement(_:)) |
+
+Keep the specification author's research records separate from the implementation handoff. Include these requirements, public API references, independent test observations, and acceptance criteria in the handoff. Exclude existing implementations' source, patches, tests, UI copy, images, settings, and build scripts from the specification and implementation inputs, including AI translations, adaptations, and pseudocode derived from them. Exclude any conversation or research notes that contain such material from the handoff.
+
+For a strict record of independence, assign specification and implementation to different people or sessions. The implementer must be someone who has never seen the existing code or a fresh AI session that does not inherit the research history. In each record, keep the person or session identifier, the references and versions consulted, the dates consulted, and the materials handed off.
+
+### Accepted Materials
+
+None. This document names public APIs and links to documentation. No Apple sample code, third-party material, or third-party dependency was adopted.
+
+Before adopting any material later, record the commit or release, files, rights holders, applicable license, redistribution conditions, required notices, and where the material will be used. Check file headers, bundled content, and indirect dependencies. Use `gh` to retrieve GitHub material. Check the license of each Apple code sample before adopting it.
+
+For adopted material under MIT or similar licenses, retain the provenance and required copyright and permission notices. For GPL, AGPL, custom terms, or material of unknown license, check distribution compatibility and wait for the user's decision before adopting it. Record any material for which compatibility or terms cannot be determined as unaccepted.
