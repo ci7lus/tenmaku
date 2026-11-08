@@ -75,6 +75,8 @@ final class StatusMenu: NSObject {
         // Reserve the Protection On state until there is a way to unlock.
         case .shielded:
             stateItem.title = protection.unlockFailure.map { LegacyCopy.text("Could not unlock: \($0)", "解除できませんでした: \($0)") } ?? LegacyCopy.text("Shielding On (Input Blocked)", "遮蔽中（入力を遮断しています）")
+        case .interrupted: stateItem.title = LegacyCopy.text("Paused (macOS Session Locked)", "中断中（セッションがロックされています）")
+        case .handingOff(let reason): stateItem.title = LegacyCopy.text("Switching to the Lock Screen: \(reason)", "ロックへ引き渡し中: \(reason)")
         case .failed(let reason): stateItem.title = LegacyCopy.text("Failed: \(reason)", "失敗: \(reason)")
         }
         indicator = state == .idle ? .unlocked : .locked

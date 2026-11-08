@@ -95,6 +95,10 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
+    func sessionIsLocked(uid: UInt32, reply: @escaping @Sendable (Bool) -> Void) {
+        reply(consoleSessionIsLocked(uid: uid) == true)
+    }
+
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {
         DispatchQueue.main.async { [self] in
             reply(engaged && complete && !seized.isEmpty)

@@ -22,6 +22,8 @@ A recommendation is a design proposal that verification has yet to confirm. The 
 
 Keep concealment windows nonopaque. With `isOpaque = true`, windows under the concealment windows disappeared from full-display captures.
 
+If gamma briefly resets during reconfiguration, items stacked above the concealment windows become visible. In a resolution change test, the Touch ID confirmation dialog and mouse pointer appeared for about 140 ms. The concealment windows continued to hide the desktop.
+
 ## Processes
 
 Separate the gamma and concealment window layers into different processes so one process failure cannot remove both layers. Keep all layers outside the UI process so they can survive a UI crash.

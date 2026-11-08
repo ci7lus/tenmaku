@@ -15,10 +15,26 @@ enum ProtectionState: Equatable {
     case idle
     case starting
     case shielded
+    /// The user or macOS locked the session. Keep the layers active and clear the protected state.
+    case interrupted
+    /// Protection cannot continue. Waiting for the session lock to take effect.
+    case handingOff(String)
     case failed(String)
 }
 
 private let replyTimeoutSeconds = 3.0
+// The keys change before the lock screen is drawn.
+private let lockSettleDuration = Duration.milliseconds(1500)
+private let lockRetryDuration = Duration.seconds(5)
+private let loginWindowFullScreenLayer = 2001
+
+private func testFlag(_ name: String) -> Bool {
+    #if TENMAKU_TEST_BUILD
+    FileManager.default.fileExists(atPath: NSHomeDirectory() + "/Library/Caches/jp.pronama.tenmaku.test-" + name)
+    #else
+    false
+    #endif
+}
 
 private final class Once: @unchecked Sendable {
     private let lock = NSLock()
@@ -117,6 +133,12 @@ final class LayerClient {
         await query { $0.takeUnlockRequest(reply: $1) }
     }
 
+    var isHeld: Bool { held }
+
+    func sessionIsLocked(uid: uid_t) async -> Bool {
+        await query { $0.sessionIsLocked(uid: uid, reply: $1) }
+    }
+
     private func query(_ body: (ShieldLayer, @escaping @Sendable (Bool) -> Void) -> Void) async -> Bool {
         await withCheckedContinuation { continuation in
             let once = Once()
@@ -155,7 +177,7 @@ final class ProtectionController {
     init() {
         gamma.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました")) }
         cover.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("The display cover was lost.", "覆いが失われました")) }
-        input.onLost = { [weak self] in self?.failAndLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました")) }
+        input.onLost = { [weak self] in self?.handOffToSessionLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました")) }
     }
 
     /// Clear the protected state while preserving the remaining layers and the unlock signal.
@@ -164,13 +186,59 @@ final class ProtectionController {
         state = .failed(reason)
     }
 
-    private func failAndLock(_ reason: String) {
+    /// Keep the remaining layers in place while locking the session, then release them after confirming the lock.
+    private func handOffToSessionLock(_ reason: String) {
         guard monitor != nil else { return }
         monitor?.cancel()
-        monitor = nil
         cancelAuthentication()
-        state = .failed(reason)
+        state = .handingOff(reason)
         requestSessionLock()
+        monitor = Task { await waitForSessionLock() }
+    }
+
+    private func waitForSessionLock() async {
+        var lockedAt: ContinuousClock.Instant?
+        var lastRequest = ContinuousClock.now
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            let confirmed = await sessionConfirmedLocked()
+            if Task.isCancelled { return }
+            let now = ContinuousClock.now
+            if confirmed {
+                let since = lockedAt ?? now
+                lockedAt = since
+                if now - since >= lockSettleDuration, loginWindowIsOpaque {
+                    stop()
+                    return
+                }
+            } else if lockedAt != nil, input.isHeld {
+                // The user returned before lock confirmation. Treat this as a return from the lock screen and start over with Touch ID.
+                watch()
+                return
+            } else {
+                lockedAt = nil
+                if now - lastRequest >= lockRetryDuration {
+                    requestSessionLock()
+                    lastRequest = now
+                }
+            }
+        }
+    }
+
+    private func sessionConfirmedLocked() async -> Bool {
+        guard !testFlag("hide-lock"), currentSessionIsLocked() == true else { return false }
+        let uid = testFlag("foreign-session") ? getuid() + 1 : getuid()
+        if input.isHeld { return await input.sessionIsLocked(uid: uid) }
+        return consoleSessionIsLocked(uid: uid) == true
+    }
+
+    private var loginWindowIsOpaque: Bool {
+        guard let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] else { return false }
+        return windows.contains {
+            $0[kCGWindowOwnerName as String] as? String == "loginwindow"
+                && $0[kCGWindowLayer as String] as? Int == loginWindowFullScreenLayer
+                && $0[kCGWindowAlpha as String] as? Double == 1
+        }
     }
 
     /// After restarting the UI, read the active layers again. Startup leaves protection in place.
@@ -188,13 +256,14 @@ final class ProtectionController {
             if coverEngaged { cover.adopt() }
             if inputEngaged { input.adopt() }
             usesCover = coverEngaged
-            state = .shielded
+            state = currentSessionIsLocked() == true ? .interrupted : .shielded
             watch()
         }
     }
 
-    /// Send Control-Command-Q. Stage 6 will wait for the lock to take effect before releasing the layers.
+    /// Send Control-Command-Q.
     private func requestSessionLock() {
+        guard !testFlag("ignore-lock-request") else { return }
         let source = CGEventSource(stateID: .hidSystemState)
         for keyDown in [true, false] {
             let event = CGEvent(keyboardEventSource: source, virtualKey: 12, keyDown: keyDown)
@@ -306,12 +375,11 @@ final class ProtectionController {
     private func finishUnlock(request: Int, success: Bool, code: LAError.Code?) {
         guard request == unlockRequest, authentication != nil, monitor != nil else { return }
         authentication = nil
-        if success {
+        if success, !testFlag("biometry-lockout") {
             unlockFailure = nil
             stop()
-        } else if code == .biometryLockout || code == .biometryNotAvailable || code == .biometryNotEnrolled {
-            // Stage 6 will wait for the lock to take effect before releasing the layers.
-            failAndLock(LegacyCopy.text("Touch ID is unavailable.", "Touch ID を使えません"))
+        } else if testFlag("biometry-lockout") || code == .biometryLockout || code == .biometryNotAvailable || code == .biometryNotEnrolled {
+            handOffToSessionLock(LegacyCopy.text("Touch ID is unavailable.", "Touch ID を使えません"))
         } else {
             reportUnlockFailure(LegacyCopy.text("Authentication failed.", "認証されませんでした"))
         }
@@ -363,7 +431,10 @@ final class ProtectionController {
                 let gammaEngaged = await gamma.isEngaged()
                 let coverEngaged = usesCover ? await cover.isEngaged() : gammaEngaged
                 let inputEngaged = await input.isEngaged()
-                if await input.takeUnlockRequest() { requestUnlock() }
+                let locked = currentSessionIsLocked() == true && !testFlag("hide-lock")
+                // Ignore key presses on the lock screen when checking for an unlock request.
+                if await input.takeUnlockRequest(), !locked { requestUnlock() }
+                if locked { cancelAuthentication() }
                 if Task.isCancelled { return }
                 if !gammaEngaged && !coverEngaged && !inputEngaged {
                     monitor = nil
@@ -372,8 +443,12 @@ final class ProtectionController {
                     return
                 }
                 if !inputEngaged {
-                    failAndLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"))
+                    handOffToSessionLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"))
                     return
+                }
+                if locked {
+                    if state != .interrupted { state = .interrupted }
+                    continue
                 }
                 if let reason = degradation(gamma: gammaEngaged, cover: coverEngaged) {
                     if state != .failed(reason) { state = .failed(reason) }

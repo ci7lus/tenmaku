@@ -42,6 +42,10 @@ final class GammaLayer: NSObject, ShieldLayer, @unchecked Sendable {
         reply(false)
     }
 
+    func sessionIsLocked(uid: UInt32, reply: @escaping @Sendable (Bool) -> Void) {
+        reply(false)
+    }
+
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {
         DispatchQueue.main.async { [self] in
             reply(timer != nil)
