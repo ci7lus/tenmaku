@@ -41,6 +41,10 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
+    func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
+        reply(false)
+    }
+
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {
         DispatchQueue.main.async { [self] in
             reply(engaged && allCovered)

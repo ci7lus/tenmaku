@@ -20,6 +20,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var complete = false
     private var pressed: Set<PressedControl> = []
     private var draining = false
+    private var unlockRequested = false
     private var generation = 0
     #if TENMAKU_TEST_BUILD
     private var crashWatcher: DispatchSourceTimer?
@@ -63,6 +64,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
             engaged = true
             complete = true
             draining = false
+            unlockRequested = false
             for device in devices where !seize(device) {
                 stop()
                 return reply("Could not seize the input devices.")
@@ -83,6 +85,13 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         DispatchQueue.main.async { [self] in
             stop()
             reply(nil)
+        }
+    }
+
+    func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
+        DispatchQueue.main.async { [self] in
+            reply(unlockRequested)
+            unlockRequested = false
         }
     }
 
@@ -176,6 +185,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         let control = PressedControl(device: registryID(IOHIDElementGetDevice(element)), page: page, usage: usage)
         if IOHIDValueGetIntegerValue(value) != 0 {
             pressed.insert(control)
+            if isKey && engaged { unlockRequested = true }
         } else {
             pressed.remove(control)
             if draining, !isPressed(control.device) {

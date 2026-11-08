@@ -73,7 +73,8 @@ final class StatusMenu: NSObject {
         case .idle: stateItem.title = LegacyCopy.text("Protection Off", "未保護")
         case .starting: stateItem.title = LegacyCopy.text("Starting…", "開始しています…")
         // Reserve the Protection On state until there is a way to unlock.
-        case .shielded: stateItem.title = LegacyCopy.text("Shielding On (Input Blocked)", "遮蔽中（入力を遮断しています）")
+        case .shielded:
+            stateItem.title = protection.unlockFailure.map { LegacyCopy.text("Could not unlock: \($0)", "解除できませんでした: \($0)") } ?? LegacyCopy.text("Shielding On (Input Blocked)", "遮蔽中（入力を遮断しています）")
         case .failed(let reason): stateItem.title = LegacyCopy.text("Failed: \(reason)", "失敗: \(reason)")
         }
         indicator = state == .idle ? .unlocked : .locked

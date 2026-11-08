@@ -43,6 +43,8 @@ public let requestInputMonitoringArgument = "--request-input-monitoring"
     func engage(reply: @escaping @Sendable (String?) -> Void)
     func release(reply: @escaping @Sendable (String?) -> Void)
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void)
+    /// Report an unlock request received since the last call. Only the input layer returns true.
+    func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void)
 }
 
 public final class LayerListener: NSObject, NSXPCListenerDelegate {

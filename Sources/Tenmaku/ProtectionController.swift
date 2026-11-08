@@ -1,6 +1,7 @@
 import ApplicationServices
 import CoreGraphics
 import Foundation
+import LocalAuthentication
 import ServiceManagement
 import TenmakuShared
 
@@ -101,6 +102,14 @@ final class LayerClient {
 
     /// Return false if there is no response.
     func isEngaged() async -> Bool {
+        await query { $0.isEngaged(reply: $1) }
+    }
+
+    func takeUnlockRequest() async -> Bool {
+        await query { $0.takeUnlockRequest(reply: $1) }
+    }
+
+    private func query(_ body: (ShieldLayer, @escaping @Sendable (Bool) -> Void) -> Void) async -> Bool {
         await withCheckedContinuation { continuation in
             let once = Once()
             let finish: @Sendable (Bool) -> Void = { result in
@@ -110,16 +119,19 @@ final class LayerClient {
                 finish(false)
                 return
             }
-            proxy.isEngaged(reply: finish)
+            body(proxy, finish)
         }
     }
 }
+
+private let unlockTimeoutNanoseconds: UInt64 = 30_000_000_000
 
 @MainActor
 final class ProtectionController {
     private(set) var state: ProtectionState = .idle {
         didSet { onChange?(state) }
     }
+    private(set) var unlockFailure: String?
     var onChange: ((ProtectionState) -> Void)?
 
     private let gamma = LayerClient(service: .gamma)
@@ -127,6 +139,9 @@ final class ProtectionController {
     private let input = LayerClient(service: .input)
     private var monitor: Task<Void, Never>?
     private var usesCover = true
+    private var authentication: LAContext?
+    // Give each request a unique number so stale or canceled attempts cannot unlock.
+    private var unlockRequest = 0
 
     init() {
         gamma.onLost = { [weak self] in self?.layerLost(LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました")) }
@@ -138,6 +153,7 @@ final class ProtectionController {
         guard state == .shielded || state == .starting else { return }
         monitor?.cancel()
         monitor = nil
+        cancelAuthentication()
         state = .failed(reason)
         if locksSession { requestSessionLock() }
     }
@@ -206,6 +222,7 @@ final class ProtectionController {
             return
         }
         usesCover = UserDefaults.standard.string(forKey: DefaultsKey.shieldMode) != ShieldMode.gammaOnly.rawValue
+        unlockFailure = nil
         state = .starting
         Task {
             if let reason = await input.preflight() {
@@ -233,9 +250,58 @@ final class ProtectionController {
         }
     }
 
+    private func requestUnlock() {
+        guard state == .shielded, authentication == nil else { return }
+        unlockRequest += 1
+        let request = unlockRequest
+        let context = LAContext()
+        context.localizedFallbackTitle = ""
+        authentication = context
+        context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: LegacyCopy.text("End Tenmaku protection", "Tenmaku の保護を解除します")) { [weak self] success, error in
+            let code = (error as? LAError)?.code
+            Task { @MainActor in self?.finishUnlock(request: request, success: success, code: code) }
+        }
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: unlockTimeoutNanoseconds)
+            self?.expireUnlock(request: request)
+        }
+    }
+
+    private func finishUnlock(request: Int, success: Bool, code: LAError.Code?) {
+        guard request == unlockRequest, authentication != nil, state == .shielded else { return }
+        authentication = nil
+        if success {
+            unlockFailure = nil
+            stop()
+        } else if code == .biometryLockout || code == .biometryNotAvailable || code == .biometryNotEnrolled {
+            // Stage 6 will wait for the lock to take effect before releasing the layers.
+            layerLost(LegacyCopy.text("Touch ID is unavailable.", "Touch ID を使えません"), locksSession: true)
+        } else {
+            reportUnlockFailure(LegacyCopy.text("Authentication failed.", "認証されませんでした"))
+        }
+    }
+
+    private func expireUnlock(request: Int) {
+        guard request == unlockRequest, authentication != nil, state == .shielded else { return }
+        cancelAuthentication()
+        reportUnlockFailure(LegacyCopy.text("No response.", "応答がありませんでした"))
+    }
+
+    private func reportUnlockFailure(_ reason: String) {
+        unlockFailure = reason
+        onChange?(state)
+    }
+
+    private func cancelAuthentication() {
+        unlockRequest += 1
+        authentication?.invalidate()
+        authentication = nil
+    }
+
     func stop() {
         monitor?.cancel()
         monitor = nil
+        cancelAuthentication()
         Task {
             let inputFailure = await input.release()
             clearStaleButtons()
@@ -257,7 +323,7 @@ final class ProtectionController {
     private func watch() {
         monitor = Task {
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                try? await Task.sleep(nanoseconds: 250_000_000)
                 let gammaEngaged = await gamma.isEngaged()
                 let coverEngaged = usesCover ? await cover.isEngaged() : gammaEngaged
                 let inputEngaged = await input.isEngaged()
@@ -266,6 +332,7 @@ final class ProtectionController {
                     state = .idle
                     return
                 }
+                if await input.takeUnlockRequest() { requestUnlock() }
                 if !inputEngaged && gammaEngaged && coverEngaged {
                     layerLost(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"), locksSession: true)
                     return
