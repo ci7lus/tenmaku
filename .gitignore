@@ -2,3 +2,5 @@
 
 .yomiyasu/
 verification/
+.build/
+build/

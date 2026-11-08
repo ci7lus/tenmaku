@@ -2,7 +2,7 @@
 
 tenmaku is a proposed macOS privacy app. When you step away from your Mac, it hides the desktop on the physical displays and blocks local keyboard and mouse input. Agents such as Codex and Claude can keep capturing and controlling the same desktop. The macOS session stays active, and the app uses Touch ID to unlock.
 
-This repository contains the specification and a summary of verification using public APIs. Product code is still pending.
+Implementation has reached stage 1 of the [implementation guide](docs/IMPLEMENTATION.md), which covers the bundle, signing, and notarization. Protection is still pending.
 
 ## Status
 
@@ -13,6 +13,22 @@ Testing on November 8, 2026 confirmed the following configuration.
 - The helper receives a physical key press during protection and starts Touch ID authentication. Successful authentication releases all layers.
 
 Trials were limited and some conditions remain unverified. [Summary of verification results](docs/VERIFICATION_SUMMARY.md)
+
+## Build
+
+```sh
+scripts/build.sh                                      # Build and sign build/Tenmaku.app
+NOTARY_PROFILE=your-profile-name scripts/notarize.sh  # Notarize, staple the ticket, and verify with spctl
+```
+
+`NOTARY_PROFILE` identifies the Keychain credentials saved with `xcrun notarytool store-credentials your-profile-name`. Set `SIGN_IDENTITY` to your Developer ID Application signing identity.
+
+| Location in the app bundle | Role |
+| --- | --- |
+| `Contents/MacOS/Tenmaku` | Menu bar UI and settings window |
+| `Contents/MacOS/TenmakuGamma` | Agent that manages gamma shielding (`jp.pronama.tenmaku.gamma`) |
+| `Contents/MacOS/TenmakuCover` | Agent that manages the cover (`jp.pronama.tenmaku.cover`) |
+| `Contents/Library/Helpers/TenmakuHelper.app` | Root daemon that blocks physical input (`jp.pronama.tenmaku.helper`) |
 
 ## Documentation
 
