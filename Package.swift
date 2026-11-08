@@ -5,9 +5,10 @@ let package = Package(
     name: "Tenmaku",
     platforms: [.macOS(.v13)],
     targets: [
-        .executableTarget(name: "Tenmaku"),
-        .executableTarget(name: "TenmakuGamma"),
-        .executableTarget(name: "TenmakuCover"),
-        .executableTarget(name: "TenmakuHelper"),
+        .target(name: "TenmakuShared"),
+        .executableTarget(name: "Tenmaku", dependencies: ["TenmakuShared"]),
+        .executableTarget(name: "TenmakuGamma", dependencies: ["TenmakuShared"]),
+        .executableTarget(name: "TenmakuCover", dependencies: ["TenmakuShared"]),
+        .executableTarget(name: "TenmakuHelper", dependencies: ["TenmakuShared"]),
     ]
 )

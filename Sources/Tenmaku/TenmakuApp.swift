@@ -15,9 +15,10 @@ enum TenmakuApp {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusMenu: StatusMenu?
     private let settings = SettingsWindowController()
+    private let protection = ProtectionController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        statusMenu = StatusMenu(openSettings: { [settings] in settings.show() })
+        statusMenu = StatusMenu(protection: protection, openSettings: { [settings] in settings.show() })
         if !UserDefaults.standard.bool(forKey: DefaultsKey.walkthroughCompleted) {
             settings.show(tab: .walkthrough)
         }

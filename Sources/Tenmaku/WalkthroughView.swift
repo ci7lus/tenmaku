@@ -2,6 +2,7 @@ import AppKit
 import CoreGraphics
 import ServiceManagement
 import SwiftUI
+import TenmakuShared
 
 enum PermissionState: Equatable {
     case granted
@@ -94,11 +95,11 @@ enum WalkthroughStep: Int, CaseIterable {
         case .welcome, .summary:
             nil
         case .helper:
-            switch SMAppService.daemon(plistName: "jp.pronama.tenmaku.helper.plist").status {
+            switch SMAppService.daemon(plistName: LayerService.input.plistName).status {
             case .enabled: .granted
             case .requiresApproval: .needsApproval
             // Services that have never been registered can also return .notFound.
-            case .notRegistered, .notFound: .unavailable(LegacyCopy.text("Helper installation is under development.", "導入の機能は開発中です"))
+            case .notRegistered, .notFound: .missing
             @unknown default: .unavailable(LegacyCopy.text("Could not determine the status.", "状態を確認できません"))
             }
         case .inputMonitoring:
@@ -196,9 +197,14 @@ struct WalkthroughView: View {
         switch step {
         case .helper where permissions[.helper] == .needsApproval:
             Button(LegacyCopy.text("Open Login Items", "ログイン項目を開く")) { SMAppService.openSystemSettingsLoginItems() }
+        case .helper where permissions[.helper] == .missing:
+            Button(LegacyCopy.text("Install", "導入する"), action: installHelper)
+        case .inputMonitoring:
+            Button(LegacyCopy.text("Request Permission", "許可を求める"), action: requestInputMonitoring)
+                .disabled(permissions[.inputMonitoring] != .missing)
         case .postEvent:
             Button(LegacyCopy.text("Request Permission", "許可を求める")) {
-                _ = CGRequestPostEventAccess()
+                requestPostEventAccess()
                 refresh()
             }
             .disabled(permissions[.postEvent] == .granted)
@@ -229,9 +235,29 @@ struct WalkthroughView: View {
         NSApp.keyWindow?.close()
     }
 
+    private func installHelper() {
+        let helper = SMAppService.daemon(plistName: LayerService.input.plistName)
+        try? helper.register()
+        if helper.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+        refresh()
+    }
+
+    // The daemon cannot request permission. Launch the helper app as the user.
+    private func requestInputMonitoring() {
+        let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/Helpers/TenmakuHelper.app")
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.arguments = [requestInputMonitoringArgument]
+        NSWorkspace.shared.openApplication(at: helper, configuration: configuration)
+    }
+
     private func refresh() {
         for item in WalkthroughStep.permissionSteps {
             permissions[item] = item.permission
+        }
+        guard permissions[.helper] == .granted else { return }
+        Task {
+            let failure = await LayerClient(service: .input).preflight()
+            permissions[.inputMonitoring] = failure == nil ? .granted : .missing
         }
     }
 }

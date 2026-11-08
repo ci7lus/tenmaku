@@ -16,12 +16,19 @@ enum ProtectionIndicator {
 final class StatusMenu: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let openSettings: () -> Void
+    private let protection: ProtectionController
+    private let stateItem = NSMenuItem(title: LegacyCopy.text("Protection Off", "未保護"), action: nil, keyEquivalent: "")
+    private let startItem = NSMenuItem(title: LegacyCopy.text("Start Protection", "保護を開始"), action: nil, keyEquivalent: "")
+    #if TENMAKU_TEST_BUILD
+    private let stopItem = NSMenuItem(title: LegacyCopy.text("Stop Shielding (Test)", "遮蔽を終了（試験用）"), action: nil, keyEquivalent: "")
+    #endif
 
     var indicator: ProtectionIndicator = .unlocked {
         didSet { applyIndicator() }
     }
 
-    init(openSettings: @escaping () -> Void) {
+    init(protection: ProtectionController, openSettings: @escaping () -> Void) {
+        self.protection = protection
         self.openSettings = openSettings
         super.init()
 
@@ -30,15 +37,24 @@ final class StatusMenu: NSObject {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        let state = NSMenuItem(title: LegacyCopy.text("Protection Off", "未保護"), action: nil, keyEquivalent: "")
-        state.isEnabled = false
-        menu.addItem(state)
+        stateItem.isEnabled = false
+        menu.addItem(stateItem)
         menu.addItem(.separator())
 
-        // Stage 2 implements activation through the gamma and cover processes.
-        let start = NSMenuItem(title: LegacyCopy.text("Start Protection", "保護を開始"), action: nil, keyEquivalent: "")
-        start.isEnabled = false
-        menu.addItem(start)
+        // Production builds require input blocking and Touch ID unlock before activation.
+        startItem.isEnabled = false
+        menu.addItem(startItem)
+        #if TENMAKU_TEST_BUILD
+        startItem.title = LegacyCopy.text("Start Shielding (Test)", "遮蔽を開始（試験用）")
+        startItem.target = self
+        startItem.action = #selector(startProtection)
+        startItem.isEnabled = true
+        stopItem.target = self
+        stopItem.action = #selector(stopProtection)
+        stopItem.isEnabled = false
+        menu.addItem(stopItem)
+        observeTestCommands()
+        #endif
         menu.addItem(.separator())
 
         let settings = NSMenuItem(title: LegacyCopy.text("Settings…", "設定…"), action: #selector(showSettings), keyEquivalent: ",")
@@ -49,7 +65,52 @@ final class StatusMenu: NSObject {
         menu.addItem(quit)
 
         item.menu = menu
+        protection.onChange = { [weak self] state in self?.apply(state) }
     }
+
+    private func apply(_ state: ProtectionState) {
+        switch state {
+        case .idle: stateItem.title = LegacyCopy.text("Protection Off", "未保護")
+        case .starting: stateItem.title = LegacyCopy.text("Starting…", "開始しています…")
+        // Reserve the Protection On state until there is a way to unlock.
+        case .shielded: stateItem.title = LegacyCopy.text("Shielding On (Input Blocked)", "遮蔽中（入力を遮断しています）")
+        case .failed(let reason): stateItem.title = LegacyCopy.text("Failed: \(reason)", "失敗: \(reason)")
+        }
+        indicator = state == .idle ? .unlocked : .locked
+        #if TENMAKU_TEST_BUILD
+        writeTestState()
+        startItem.isEnabled = state == .idle
+        stopItem.isEnabled = state != .idle && state != .starting
+        if case .failed = state { startItem.isEnabled = true }
+        #endif
+    }
+
+    #if TENMAKU_TEST_BUILD
+    @objc private func startProtection() {
+        protection.start()
+    }
+
+    @objc private func stopProtection() {
+        protection.stop()
+    }
+
+    // Automated tests cannot operate the menu if the icon is hidden by menu bar overflow.
+    private func observeTestCommands() {
+        let center = DistributedNotificationCenter.default()
+        for (name, command) in [("start", startProtection), ("stop", stopProtection)] as [(String, () -> Void)] {
+            nonisolated(unsafe) let command = command
+            center.addObserver(forName: .init("jp.pronama.tenmaku.test.\(name)"), object: nil, queue: .main) { _ in
+                MainActor.assumeIsolated { command() }
+            }
+        }
+        writeTestState()
+    }
+
+    private func writeTestState() {
+        let path = NSHomeDirectory() + "/Library/Caches/jp.pronama.tenmaku.test-state"
+        try? stateItem.title.write(toFile: path, atomically: true, encoding: .utf8)
+    }
+    #endif
 
     private func applyIndicator() {
         let image = NSImage(named: indicator.imageName)

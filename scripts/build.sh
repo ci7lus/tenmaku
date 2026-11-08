@@ -2,6 +2,7 @@
 # Assemble Tenmaku.app and sign it with Developer ID and Hardened Runtime.
 # Usage: scripts/build.sh
 # Environment variables: SIGN_IDENTITY (signing certificate), VERSION, BUILD_NUMBER
+#           Set TENMAKU_TEST_BUILD=1 to write a shielding test build to build/test/. Exclude it from distribution.
 set -euo pipefail
 
 ROOT=${0:A:h:h}
@@ -9,12 +10,18 @@ ROOT=${0:A:h:h}
 VERSION=${VERSION:-0.0.0}
 BUILD_NUMBER=${BUILD_NUMBER:-0}
 
-APP="$ROOT/build/Tenmaku.app"
+if [[ -n "${TENMAKU_TEST_BUILD:-}" ]]; then
+  APP="$ROOT/build/test/Tenmaku.app"
+  SWIFT_FLAGS=(-Xswiftc -DTENMAKU_TEST_BUILD)
+else
+  APP="$ROOT/build/Tenmaku.app"
+  SWIFT_FLAGS=()
+fi
 HELPER_APP="$APP/Contents/Library/Helpers/TenmakuHelper.app"
 
 cd "$ROOT"
-swift build -c release --arch arm64 --arch x86_64
-BIN=$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)
+swift build -c release --arch arm64 --arch x86_64 "${SWIFT_FLAGS[@]}"
+BIN=$(swift build -c release --arch arm64 --arch x86_64 "${SWIFT_FLAGS[@]}" --show-bin-path)
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" \
