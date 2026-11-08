@@ -18,6 +18,8 @@ enum ProtectionState: Equatable {
     case failed(String)
 }
 
+private let replyTimeoutSeconds = 3.0
+
 private final class Once: @unchecked Sendable {
     private let lock = NSLock()
     private var done = false
@@ -71,6 +73,11 @@ final class LayerClient {
         }
     }
 
+    /// Take over layers that are still active after the UI restarts.
+    func adopt() {
+        held = true
+    }
+
     func preflight() async -> String? {
         await command { $0.preflight(reply: $1) }
     }
@@ -96,6 +103,7 @@ final class LayerClient {
                 finish(LegacyCopy.text("Could not connect.", "接続できませんでした"))
                 return
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + replyTimeoutSeconds) { finish(LegacyCopy.text("No response.", "応答がありません")) }
             body(proxy, finish)
         }
     }
@@ -119,6 +127,7 @@ final class LayerClient {
                 finish(false)
                 return
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + replyTimeoutSeconds) { finish(false) }
             body(proxy, finish)
         }
     }
@@ -144,18 +153,44 @@ final class ProtectionController {
     private var unlockRequest = 0
 
     init() {
-        gamma.onLost = { [weak self] in self?.layerLost(LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました")) }
-        cover.onLost = { [weak self] in self?.layerLost(LegacyCopy.text("The display cover was lost.", "覆いが失われました")) }
-        input.onLost = { [weak self] in self?.layerLost(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"), locksSession: true) }
+        gamma.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました")) }
+        cover.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("The display cover was lost.", "覆いが失われました")) }
+        input.onLost = { [weak self] in self?.failAndLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました")) }
     }
 
-    private func layerLost(_ reason: String, locksSession: Bool = false) {
-        guard state == .shielded || state == .starting else { return }
+    /// Clear the protected state while preserving the remaining layers and the unlock signal.
+    private func reportDegraded(_ reason: String) {
+        guard monitor != nil else { return }
+        state = .failed(reason)
+    }
+
+    private func failAndLock(_ reason: String) {
+        guard monitor != nil else { return }
         monitor?.cancel()
         monitor = nil
         cancelAuthentication()
         state = .failed(reason)
-        if locksSession { requestSessionLock() }
+        requestSessionLock()
+    }
+
+    /// After restarting the UI, read the active layers again. Startup leaves protection in place.
+    func restoreIfEngaged() {
+        let agents = LayerService.agents.map { SMAppService.agent(plistName: $0.plistName) }
+        guard agents.allSatisfy({ $0.status == .enabled }) else { return }
+        // Keep the launchd registration current if an app update moves the executable.
+        agents.forEach { try? $0.register() }
+        Task {
+            let gammaEngaged = await gamma.isEngaged()
+            let coverEngaged = await cover.isEngaged()
+            let inputEngaged = await input.isEngaged()
+            guard gammaEngaged || coverEngaged || inputEngaged else { return }
+            if gammaEngaged { gamma.adopt() }
+            if coverEngaged { cover.adopt() }
+            if inputEngaged { input.adopt() }
+            usesCover = coverEngaged
+            state = .shielded
+            watch()
+        }
     }
 
     /// Send Control-Command-Q. Stage 6 will wait for the lock to take effect before releasing the layers.
@@ -216,7 +251,7 @@ final class ProtectionController {
     }
 
     func start() {
-        guard state == .idle || isFailed else { return }
+        guard monitor == nil, state == .idle || isFailed else { return }
         if let reason = preflightFailure() {
             state = .failed(reason)
             return
@@ -229,29 +264,21 @@ final class ProtectionController {
                 state = .failed(reason)
                 return
             }
-            guard state == .starting else { return }
-            if let reason = await gamma.engage() {
+            // Apply the remaining layers after a partial failure. Continue to the input layer so it can receive an unlock request.
+            let gammaFailure = await gamma.engage()
+            let coverFailure = usesCover ? await cover.engage() : nil
+            let inputFailure = await input.engage()
+            if let reason = gammaFailure ?? coverFailure ?? inputFailure {
                 state = .failed(reason)
-                return
+            } else {
+                state = .shielded
             }
-            guard state == .starting else { return }
-            if usesCover, let reason = await cover.engage() {
-                state = .failed(reason)
-                return
-            }
-            guard state == .starting else { return }
-            if let reason = await input.engage() {
-                state = .failed(reason)
-                return
-            }
-            guard state == .starting else { return }
-            state = .shielded
             watch()
         }
     }
 
     private func requestUnlock() {
-        guard state == .shielded, authentication == nil else { return }
+        guard monitor != nil, authentication == nil else { return }
         unlockRequest += 1
         let request = unlockRequest
         let context = LAContext()
@@ -259,7 +286,16 @@ final class ProtectionController {
         authentication = context
         context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: LegacyCopy.text("End Tenmaku protection", "Tenmaku の保護を解除します")) { [weak self] success, error in
             let code = (error as? LAError)?.code
-            Task { @MainActor in self?.finishUnlock(request: request, success: success, code: code) }
+            Task { @MainActor in
+                #if TENMAKU_TEST_BUILD
+                let caches = NSHomeDirectory() + "/Library/Caches/jp.pronama.tenmaku.test-"
+                if FileManager.default.fileExists(atPath: caches + "delay-auth") {
+                    FileManager.default.createFile(atPath: caches + "auth-returned", contents: nil)
+                    try? await Task.sleep(nanoseconds: 6_000_000_000)
+                }
+                #endif
+                self?.finishUnlock(request: request, success: success, code: code)
+            }
         }
         Task { [weak self] in
             try? await Task.sleep(nanoseconds: unlockTimeoutNanoseconds)
@@ -268,21 +304,21 @@ final class ProtectionController {
     }
 
     private func finishUnlock(request: Int, success: Bool, code: LAError.Code?) {
-        guard request == unlockRequest, authentication != nil, state == .shielded else { return }
+        guard request == unlockRequest, authentication != nil, monitor != nil else { return }
         authentication = nil
         if success {
             unlockFailure = nil
             stop()
         } else if code == .biometryLockout || code == .biometryNotAvailable || code == .biometryNotEnrolled {
             // Stage 6 will wait for the lock to take effect before releasing the layers.
-            layerLost(LegacyCopy.text("Touch ID is unavailable.", "Touch ID を使えません"), locksSession: true)
+            failAndLock(LegacyCopy.text("Touch ID is unavailable.", "Touch ID を使えません"))
         } else {
             reportUnlockFailure(LegacyCopy.text("Authentication failed.", "認証されませんでした"))
         }
     }
 
     private func expireUnlock(request: Int) {
-        guard request == unlockRequest, authentication != nil, state == .shielded else { return }
+        guard request == unlockRequest, authentication != nil, monitor != nil else { return }
         cancelAuthentication()
         reportUnlockFailure(LegacyCopy.text("No response.", "応答がありませんでした"))
     }
@@ -327,21 +363,39 @@ final class ProtectionController {
                 let gammaEngaged = await gamma.isEngaged()
                 let coverEngaged = usesCover ? await cover.isEngaged() : gammaEngaged
                 let inputEngaged = await input.isEngaged()
+                if await input.takeUnlockRequest() { requestUnlock() }
                 if Task.isCancelled { return }
                 if !gammaEngaged && !coverEngaged && !inputEngaged {
-                    state = .idle
+                    monitor = nil
+                    cancelAuthentication()
+                    if !isFailed { state = .idle }
                     return
                 }
-                if await input.takeUnlockRequest() { requestUnlock() }
-                if !inputEngaged && gammaEngaged && coverEngaged {
-                    layerLost(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"), locksSession: true)
+                if !inputEngaged {
+                    failAndLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"))
                     return
                 }
-                if !gammaEngaged || !coverEngaged {
-                    state = .failed(gammaEngaged ? LegacyCopy.text("The display cover was lost.", "覆いが失われました") : LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました"))
-                    return
+                if let reason = degradation(gamma: gammaEngaged, cover: coverEngaged) {
+                    if state != .failed(reason) { state = .failed(reason) }
+                } else if state != .shielded {
+                    state = .shielded
                 }
             }
         }
+    }
+
+    private func degradation(gamma: Bool, cover: Bool) -> String? {
+        if isMirrored { return LegacyCopy.text("Mirrored displays are unsupported.", "ミラー表示には対応していません") }
+        if !gamma { return LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました") }
+        if !cover { return LegacyCopy.text("The display cover was lost.", "覆いが失われました") }
+        return nil
+    }
+
+    private var isMirrored: Bool {
+        var count: UInt32 = 0
+        guard CGGetOnlineDisplayList(0, nil, &count) == .success, count > 0 else { return false }
+        var displays = [CGDirectDisplayID](repeating: 0, count: Int(count))
+        guard CGGetOnlineDisplayList(count, &displays, &count) == .success else { return false }
+        return displays.prefix(Int(count)).contains { CGDisplayIsInMirrorSet($0) != 0 }
     }
 }

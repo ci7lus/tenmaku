@@ -5,7 +5,7 @@
 	<key>Label</key>
 	<string>jp.pronama.tenmaku.gamma</string>
 	<key>BundleProgram</key>
-	<string>Contents/MacOS/TenmakuGamma</string>
+	<string>Contents/Library/Helpers/TenmakuGamma.app/Contents/MacOS/TenmakuGamma</string>
 	<key>MachServices</key>
 	<dict>
 		<key>jp.pronama.tenmaku.gamma</key>
