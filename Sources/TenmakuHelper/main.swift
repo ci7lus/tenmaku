@@ -5,6 +5,8 @@ import TenmakuShared
 
 private let seizeOption = IOOptionBits(kIOHIDOptionsTypeSeizeDevice)
 private let drainTimeoutSeconds = 30.0
+private let escapeHoldSeconds = 10.0
+private let escapeUsage = UInt32(kHIDUsage_KeyboardEscape)
 
 private struct PressedControl: Hashable {
     let device: UInt64
@@ -21,6 +23,8 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var pressed: Set<PressedControl> = []
     private var draining = false
     private var unlockRequested = false
+    private var escapeRequested = false
+    private var escapeHold: DispatchWorkItem?
     private var generation = 0
     #if TENMAKU_TEST_BUILD
     private var crashWatcher: DispatchSourceTimer?
@@ -65,6 +69,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
             complete = true
             draining = false
             unlockRequested = false
+            escapeRequested = false
             for device in devices where !seize(device) {
                 stop()
                 return reply("Could not seize the input devices.")
@@ -92,6 +97,13 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         DispatchQueue.main.async { [self] in
             reply(unlockRequested)
             unlockRequested = false
+        }
+    }
+
+    func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) {
+        DispatchQueue.main.async { [self] in
+            reply(escapeRequested)
+            escapeRequested = false
         }
     }
 
@@ -126,6 +138,8 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private func stop() {
         generation += 1
         engaged = false
+        escapeHold?.cancel()
+        escapeHold = nil
         for id in Array(seized.keys) where !isPressed(id) { close(id) }
         guard !seized.isEmpty else { return }
         draining = true
@@ -186,17 +200,30 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         let usage = IOHIDElementGetUsage(element)
         let isKey = page == kHIDPage_KeyboardOrKeypad && (4...231).contains(usage)
         guard isKey || page == kHIDPage_Button else { return }
+        let isEscape = page == kHIDPage_KeyboardOrKeypad && usage == escapeUsage
         let control = PressedControl(device: registryID(IOHIDElementGetDevice(element)), page: page, usage: usage)
         if IOHIDValueGetIntegerValue(value) != 0 {
             pressed.insert(control)
             if isKey && engaged { unlockRequested = true }
+            if isEscape && engaged { beginEscapeHold() }
         } else {
             pressed.remove(control)
+            if isEscape {
+                escapeHold?.cancel()
+                escapeHold = nil
+            }
             if draining, !isPressed(control.device) {
                 close(control.device)
                 draining = !seized.isEmpty
             }
         }
+    }
+
+    private func beginEscapeHold() {
+        escapeHold?.cancel()
+        let hold = DispatchWorkItem { [self] in escapeRequested = true }
+        escapeHold = hold
+        DispatchQueue.main.asyncAfter(deadline: .now() + escapeHoldSeconds, execute: hold)
     }
 
     private func deviceAppeared(_ device: IOHIDDevice) {

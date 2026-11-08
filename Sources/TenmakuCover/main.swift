@@ -45,6 +45,10 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         reply(false)
     }
 
+    func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) {
+        reply(false)
+    }
+
     func sessionIsLocked(uid: UInt32, reply: @escaping @Sendable (Bool) -> Void) {
         reply(false)
     }

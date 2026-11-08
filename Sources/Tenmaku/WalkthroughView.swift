@@ -85,7 +85,7 @@ enum WalkthroughStep: Int, CaseIterable {
         case .postEvent:
             LegacyCopy.text("This lets Tenmaku lock your Mac if it can no longer maintain protection.", "保護を続けられなくなったときに、Mac の画面をロックするために使います。")
         case .summary:
-            LegacyCopy.text("Go back to grant missing permissions. A future version will let you start protection.", "足りない項目は、戻って設定できます。保護の開始は、今後の版で使えるようになります。")
+            LegacyCopy.text("Go back to grant missing permissions. A future version will let you start protection. If Touch ID cannot unlock, hold Esc for 10 seconds to switch to the lock screen.", "足りない項目は、戻って設定できます。保護の開始は、今後の版で使えるようになります。Touch ID で解除できないときは、Esc を 10 秒長押しするとロック画面へ移ります。")
         }
     }
 

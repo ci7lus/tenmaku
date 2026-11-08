@@ -65,7 +65,7 @@ Check the display configuration and stop if mirroring is active. Then apply gamm
 
 ## Handoff to the session lock
 
-Hand off when the helper stops or Touch ID is unavailable, such as during `biometryLockout`. See [Fallback to macOS Session Lock](SPEC.md#fallback-to-macos-session-lock).
+Hand off when the helper stops. If Touch ID is unavailable, such as during `biometryLockout`, handoff requires the user to hold Esc for 10 seconds after a failed unlock while the app is still locked, or during an interruption caused by a macOS session lock. See [Fallback to macOS Session Lock](SPEC.md#fallback-to-macos-session-lock).
 
 1. Keep the remaining protections in place and send Control-Command-Q.
 2. Wait for all three conditions.

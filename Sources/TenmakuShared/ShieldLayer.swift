@@ -45,6 +45,8 @@ public let requestInputMonitoringArgument = "--request-input-monitoring"
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void)
     /// Report an unlock request received since the last call. Only the input layer returns true.
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void)
+    /// Report whether Esc has been held long enough since the last call. Only the input layer returns true.
+    func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void)
     /// Check whether the target user's session is locked via `IOConsoleUsers`. Only the input layer returns true.
     func sessionIsLocked(uid: UInt32, reply: @escaping @Sendable (Bool) -> Void)
 }

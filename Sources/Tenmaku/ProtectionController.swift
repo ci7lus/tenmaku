@@ -133,6 +133,10 @@ final class LayerClient {
         await query { $0.takeUnlockRequest(reply: $1) }
     }
 
+    func takeEscapeRequest() async -> Bool {
+        await query { $0.takeEscapeRequest(reply: $1) }
+    }
+
     var isHeld: Bool { held }
 
     func sessionIsLocked(uid: uid_t) async -> Bool {
@@ -379,7 +383,8 @@ final class ProtectionController {
             unlockFailure = nil
             stop()
         } else if testFlag("biometry-lockout") || code == .biometryLockout || code == .biometryNotAvailable || code == .biometryNotEnrolled {
-            handOffToSessionLock(LegacyCopy.text("Touch ID is unavailable.", "Touch ID を使えません"))
+            // Periodic Touch ID lockouts can occur. Leave the session running while the user is away.
+            reportUnlockFailure(LegacyCopy.text("Touch ID is unavailable. Hold Esc for 10 seconds to switch to the lock screen.", "Touch ID を使えません。Esc を 10 秒長押しするとロック画面へ移ります"))
         } else {
             reportUnlockFailure(LegacyCopy.text("Authentication failed.", "認証されませんでした"))
         }
@@ -435,6 +440,11 @@ final class ProtectionController {
                 // Ignore key presses on the lock screen when checking for an unlock request.
                 if await input.takeUnlockRequest(), !locked { requestUnlock() }
                 if locked { cancelAuthentication() }
+                // This fallback for unavailable Touch ID requires someone to hold Esc.
+                if await input.takeEscapeRequest(), locked || unlockFailure != nil {
+                    handOffToSessionLock(LegacyCopy.text("Esc was held.", "Esc の長押しを受けました"))
+                    return
+                }
                 if Task.isCancelled { return }
                 if !gammaEngaged && !coverEngaged && !inputEngaged {
                     monitor = nil
