@@ -36,7 +36,7 @@ struct GeneralSettingsView: View {
             Section {
                 Stepper(LegacyCopy.text("Hold Duration for the Unlock Key: \(unlockHoldSeconds) seconds", "解除するキーの長押し: \(unlockHoldSeconds) 秒"), value: $unlockHoldSeconds, in: 1...30)
             } footer: {
-                Text(LegacyCopy.text("While protection is on, hold a key other than Esc for this duration to start Touch ID. This change applies the next time you start protection.", "保護中に Esc 以外のキーをこの秒数押し続けると、Touch ID の確認が始まります。次に保護を開始したときから反映します。"))
+                Text(LegacyCopy.text("While protection is on, hold a key other than Esc for this duration. Touch Touch ID when you hear the sound. This change applies the next time you start protection.", "保護中に Esc 以外のキーをこの秒数押し続けると音が鳴ります。音が鳴ったら Touch ID に触れて解除します。次に保護を開始したときから反映します。"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

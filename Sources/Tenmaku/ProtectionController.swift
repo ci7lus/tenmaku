@@ -1,3 +1,4 @@
+import AppKit
 import ApplicationServices
 import CoreGraphics
 import Foundation
@@ -358,6 +359,8 @@ final class ProtectionController {
 
     private func requestUnlock() {
         guard monitor != nil, authentication == nil else { return }
+        // Play a sound when it is time to touch Touch ID because the prompt is hidden while shielding is active.
+        NSSound(named: "Glass")?.play()
         unlockRequest += 1
         let request = unlockRequest
         let context = LAContext()
