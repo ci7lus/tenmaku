@@ -24,7 +24,8 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var draining = false
     private var unlockRequested = false
     private var escapeRequested = false
-    private var escapeHold: DispatchWorkItem?
+    private var holds: [PressedControl: DispatchWorkItem] = [:]
+    private var unlockHoldSeconds = Double(defaultUnlockHoldSeconds)
     private var generation = 0
     #if TENMAKU_TEST_BUILD
     private var crashWatcher: DispatchSourceTimer?
@@ -93,6 +94,17 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
+    func isIdle() -> Bool {
+        !engaged && seized.isEmpty
+    }
+
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void) {
+        DispatchQueue.main.async { [self] in
+            unlockHoldSeconds = seconds
+            reply(nil)
+        }
+    }
+
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
         DispatchQueue.main.async { [self] in
             reply(unlockRequested)
@@ -138,8 +150,8 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private func stop() {
         generation += 1
         engaged = false
-        escapeHold?.cancel()
-        escapeHold = nil
+        holds.values.forEach { $0.cancel() }
+        holds = [:]
         for id in Array(seized.keys) where !isPressed(id) { close(id) }
         guard !seized.isEmpty else { return }
         draining = true
@@ -204,14 +216,10 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         let control = PressedControl(device: registryID(IOHIDElementGetDevice(element)), page: page, usage: usage)
         if IOHIDValueGetIntegerValue(value) != 0 {
             pressed.insert(control)
-            if isKey && engaged { unlockRequested = true }
-            if isEscape && engaged { beginEscapeHold() }
+            if isKey && engaged { beginHold(control, isEscape: isEscape) }
         } else {
             pressed.remove(control)
-            if isEscape {
-                escapeHold?.cancel()
-                escapeHold = nil
-            }
+            holds.removeValue(forKey: control)?.cancel()
             if draining, !isPressed(control.device) {
                 close(control.device)
                 draining = !seized.isEmpty
@@ -219,11 +227,15 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    private func beginEscapeHold() {
-        escapeHold?.cancel()
-        let hold = DispatchWorkItem { [self] in escapeRequested = true }
-        escapeHold = hold
-        DispatchQueue.main.asyncAfter(deadline: .now() + escapeHoldSeconds, execute: hold)
+    // Using Esc to request unlock would start Touch ID during the 10-second hold.
+    private func beginHold(_ control: PressedControl, isEscape: Bool) {
+        holds[control]?.cancel()
+        let hold = DispatchWorkItem { [self] in
+            holds[control] = nil
+            if isEscape { escapeRequested = true } else { unlockRequested = true }
+        }
+        holds[control] = hold
+        DispatchQueue.main.asyncAfter(deadline: .now() + (isEscape ? escapeHoldSeconds : unlockHoldSeconds), execute: hold)
     }
 
     private func deviceAppeared(_ device: IOHIDDevice) {
@@ -235,6 +247,9 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         let id = registryID(device)
         seized[id] = nil
         pressed = pressed.filter { $0.device != id }
+        for control in holds.keys where control.device == id {
+            holds.removeValue(forKey: control)?.cancel()
+        }
     }
 }
 
@@ -246,4 +261,5 @@ if CommandLine.arguments.contains(requestInputMonitoringArgument) {
 let layer = InputLayer()
 let listener = LayerListener(service: .input, layer: layer)
 listener.resume()
+exitWhenIdle { [layer] in layer.isIdle() }
 RunLoop.main.run()

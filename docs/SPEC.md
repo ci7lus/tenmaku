@@ -54,7 +54,7 @@ If a user action or macOS setting locks the session, treat it as an interruption
 
 | Situation | Required behavior |
 | --- | --- |
-| Normal unlock | Keep the desktop hidden and input blocked until authentication succeeds. Then restore the display and input in the same session. Discard authentication input and any input blocked during the lock so it never reaches the desktop. |
+| Normal unlock | Start an unlock request when the user holds any key except Esc for the configured duration (5 seconds by default, adjustable from 1 to 30 seconds). A brief press does not start a request or interrupt Codex or Claude. Keep the desktop hidden and input blocked until authentication succeeds. Then restore the display and input in the same session. Discard authentication input and any input blocked during the lock so it never reaches the desktop. |
 | App lock start request fails | This includes a rejected request, no response, or an inability to verify concealment or input blocking. Report the start failure and recover any partially applied changes under the conditions above. |
 | Unlock authentication fails | This includes authentication failure, cancellation, unavailability, and timeout. Keep display concealment and input blocking in place and report the failed unlock in the app state. Each retry requires successful authentication for that request. Even if Touch ID is unavailable because of its attempt limit or periodic macOS restrictions, avoid automatically locking the session so that work can continue while the user is away. After a failed unlock, request a macOS session lock if the user holds Esc for 10 seconds. If the lock can be verified, end the app lock and leave the app unlocked after the user authenticates with macOS. If the app keeps its lock because it cannot verify the session lock, handle the user's return as a return from a session lock and require a new Touch ID unlock. |
 | Input filter stops | This covers disabling the filter, timeout, permission revocation, and a filter that stops processing. Keep the displays hidden and clear the locked status. Return to the locked state if input blocking can be reestablished. If any covered input gets through between the failure and recovery, the test fails even if the filter recovers. When the helper stops, detect the failure and request a macOS session lock. Document that physical input can pass through between the helper's exit and the lock request. |
@@ -81,6 +81,8 @@ Run each operation in both Codex and Claude and assess each row separately. In A
 | A03 | Click a test button. | Only the designated button responds and its click count increases by 1. |
 | A04 | Enter a test string in a field and perform a test action with a modifier key. | The string appears once in the designated field and the test action takes effect. The modifier does not remain pressed. |
 | A05 | Scroll a scrollable region up and down. | The designated region moves in the specified direction and shows different markers. |
+
+Claude computer use refuses to click or scroll when a window from an unapproved app covers the target. In **Gamma and Concealment Windows** mode, the concealment windows intercept those operations, so use **Gamma Only** for Claude clicks and scrolling. Notifications left in Notification Center block the same operations for the same reason. Capture, text entry, and operations with modifiers work in both concealment modes.
 
 ### Lock and failure tests
 

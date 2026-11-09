@@ -20,21 +20,27 @@ enum SettingsTab: Int, CaseIterable {
     }
 
     @MainActor
-    var content: AnyView {
+    func content(protection: ProtectionController) -> AnyView {
         switch self {
         case .walkthrough: AnyView(WalkthroughView())
-        case .general: AnyView(GeneralSettingsView())
+        case .general: AnyView(GeneralSettingsView(start: protection.start))
         }
     }
 }
 
 @MainActor
 final class SettingsWindowController {
+    private let protection: ProtectionController
+
+    init(protection: ProtectionController) {
+        self.protection = protection
+    }
+
     private lazy var tabs: NSTabViewController = {
         let tabs = NSTabViewController()
         tabs.tabStyle = .toolbar
         for tab in SettingsTab.allCases {
-            let host = NSHostingController(rootView: tab.content)
+            let host = NSHostingController(rootView: tab.content(protection: protection))
             host.sizingOptions = .preferredContentSize
             host.title = tab.title
             let item = NSTabViewItem(viewController: host)

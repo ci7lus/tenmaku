@@ -14,8 +14,8 @@ enum TenmakuApp {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusMenu: StatusMenu?
-    private let settings = SettingsWindowController()
     private let protection = ProtectionController()
+    private lazy var settings = SettingsWindowController(protection: protection)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusMenu = StatusMenu(protection: protection, openSettings: { [settings] in settings.show() })
@@ -34,4 +34,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 enum DefaultsKey {
     static let walkthroughCompleted = "walkthroughCompleted"
     static let shieldMode = "shieldMode"
+    static let unlockHoldSeconds = "unlockHoldSeconds"
 }

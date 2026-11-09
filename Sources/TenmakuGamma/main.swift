@@ -38,8 +38,16 @@ final class GammaLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
+    func isIdle() -> Bool {
+        timer == nil
+    }
+
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
         reply(false)
+    }
+
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void) {
+        reply(nil)
     }
 
     func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) {
@@ -96,6 +104,7 @@ final class GammaLayer: NSObject, ShieldLayer, @unchecked Sendable {
 let layer = GammaLayer()
 let listener = LayerListener(service: .gamma, layer: layer)
 listener.resume()
+exitWhenIdle { [layer] in layer.isIdle() }
 // Run NSApplication to receive display reconfiguration notifications.
 NSApplication.shared.setActivationPolicy(.prohibited)
 NSApplication.shared.run()

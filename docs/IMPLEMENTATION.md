@@ -33,7 +33,7 @@ Separate the gamma and concealment window layers into different processes so one
 | UI (main app) | User | Starts the lock and shows its state. Authenticates with Touch ID through `LAContext`. Requests a session lock by posting Control-Command-Q with `CGEventPost`. Checks `CGSessionCopyCurrentDictionary` and the `loginwindow` window to help verify the lock. |
 | Gamma | User's login session | Owns the gamma layer. |
 | Concealment windows | User's login session | Owns the concealment window layer. |
-| Helper | root (`SMAppService.daemon`) | Owns the input layer. Signals an unlock request when it receives a physical key while locked. Reads `CGSSessionScreenIsLocked` in `IOConsoleUsers`. |
+| Helper | root (`SMAppService.daemon`) | Owns the input layer. Signals an unlock request when it detects a physical key hold while locked. Reads `CGSSessionScreenIsLocked` in `IOConsoleUsers`. |
 
 - Recommendation. Register gamma and concealment windows as agents with `SMAppService.agent` so they run independently of the UI process.
 - Recommendation. Keep lock state in one place outside the UI, including start in progress, locked, unlock in progress, fault, and handoff to the session lock. Have the UI read the state each time it starts (A12 in the specification).

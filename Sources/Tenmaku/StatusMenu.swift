@@ -41,14 +41,11 @@ final class StatusMenu: NSObject {
         menu.addItem(stateItem)
         menu.addItem(.separator())
 
-        // Production builds require input blocking and Touch ID unlock before activation.
-        startItem.isEnabled = false
+        startItem.target = self
+        startItem.action = #selector(startProtection)
         menu.addItem(startItem)
         #if TENMAKU_TEST_BUILD
         startItem.title = LegacyCopy.text("Start Shielding (Test)", "遮蔽を開始（試験用）")
-        startItem.target = self
-        startItem.action = #selector(startProtection)
-        startItem.isEnabled = true
         stopItem.target = self
         stopItem.action = #selector(stopProtection)
         stopItem.isEnabled = false
@@ -72,27 +69,26 @@ final class StatusMenu: NSObject {
         switch state {
         case .idle: stateItem.title = LegacyCopy.text("Protection Off", "未保護")
         case .starting: stateItem.title = LegacyCopy.text("Starting…", "開始しています…")
-        // Reserve the Protection On state until there is a way to unlock.
         case .shielded:
-            stateItem.title = protection.unlockFailure.map { LegacyCopy.text("Could not unlock: \($0)", "解除できませんでした: \($0)") } ?? LegacyCopy.text("Shielding On (Input Blocked)", "遮蔽中（入力を遮断しています）")
+            stateItem.title = protection.unlockFailure.map { LegacyCopy.text("Could not unlock: \($0)", "解除できませんでした: \($0)") } ?? LegacyCopy.text("Protection On", "保護中")
         case .interrupted: stateItem.title = LegacyCopy.text("Paused (macOS Session Locked)", "中断中（セッションがロックされています）")
         case .handingOff(let reason): stateItem.title = LegacyCopy.text("Switching to the Lock Screen: \(reason)", "ロックへ引き渡し中: \(reason)")
         case .failed(let reason): stateItem.title = LegacyCopy.text("Failed: \(reason)", "失敗: \(reason)")
         }
         indicator = state == .idle ? .unlocked : .locked
+        startItem.isEnabled = state == .idle
+        if case .failed = state { startItem.isEnabled = true }
         #if TENMAKU_TEST_BUILD
         writeTestState()
-        startItem.isEnabled = state == .idle
         stopItem.isEnabled = state != .idle && state != .starting
-        if case .failed = state { startItem.isEnabled = true }
         #endif
     }
 
-    #if TENMAKU_TEST_BUILD
     @objc private func startProtection() {
         protection.start()
     }
 
+    #if TENMAKU_TEST_BUILD
     @objc private func stopProtection() {
         protection.stop()
     }

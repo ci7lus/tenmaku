@@ -41,8 +41,16 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
+    func isIdle() -> Bool {
+        !engaged
+    }
+
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
         reply(false)
+    }
+
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void) {
+        reply(nil)
     }
 
     func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) {
@@ -109,5 +117,6 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
 let layer = CoverLayer()
 let listener = LayerListener(service: .cover, layer: layer)
 listener.resume()
+exitWhenIdle { [layer] in layer.isIdle() }
 NSApplication.shared.setActivationPolicy(.accessory)
 NSApplication.shared.run()

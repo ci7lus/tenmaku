@@ -1,4 +1,5 @@
 import SwiftUI
+import TenmakuShared
 
 enum ShieldMode: String, CaseIterable, Identifiable {
     case gammaAndCover
@@ -15,7 +16,9 @@ enum ShieldMode: String, CaseIterable, Identifiable {
 }
 
 struct GeneralSettingsView: View {
+    let start: () -> Void
     @AppStorage(DefaultsKey.shieldMode) private var shieldMode: ShieldMode = .gammaAndCover
+    @AppStorage(DefaultsKey.unlockHoldSeconds) private var unlockHoldSeconds = defaultUnlockHoldSeconds
 
     var body: some View {
         Form {
@@ -27,6 +30,21 @@ struct GeneralSettingsView: View {
                 }
             } footer: {
                 Text(footer)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Stepper(LegacyCopy.text("Hold Duration for the Unlock Key: \(unlockHoldSeconds) seconds", "解除するキーの長押し: \(unlockHoldSeconds) 秒"), value: $unlockHoldSeconds, in: 1...30)
+            } footer: {
+                Text(LegacyCopy.text("While protection is on, hold a key other than Esc for this duration to start Touch ID. This change applies the next time you start protection.", "保護中に Esc 以外のキーをこの秒数押し続けると、Touch ID の確認が始まります。次に保護を開始したときから反映します。"))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Button(LegacyCopy.text("Start Protection", "保護を開始"), action: start)
+            } footer: {
+                // A display notch can hide the menu bar icon.
+                Text(LegacyCopy.text("You can start protection here if the menu bar icon is hidden.", "メニューバーにアイコンが見えないときは、ここから開始できます。"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

@@ -129,6 +129,10 @@ final class LayerClient {
         await query { $0.isEngaged(reply: $1) }
     }
 
+    func setUnlockHold(seconds: Int) async {
+        _ = await command { $0.setUnlockHold(seconds: Double(seconds), reply: $1) }
+    }
+
     func takeUnlockRequest() async -> Bool {
         await query { $0.takeUnlockRequest(reply: $1) }
     }
@@ -330,6 +334,7 @@ final class ProtectionController {
             return
         }
         usesCover = UserDefaults.standard.string(forKey: DefaultsKey.shieldMode) != ShieldMode.gammaOnly.rawValue
+        let unlockHoldSeconds = UserDefaults.standard.object(forKey: DefaultsKey.unlockHoldSeconds) as? Int ?? defaultUnlockHoldSeconds
         unlockFailure = nil
         state = .starting
         Task {
@@ -340,6 +345,7 @@ final class ProtectionController {
             // Apply the remaining layers after a partial failure. Continue to the input layer so it can receive an unlock request.
             let gammaFailure = await gamma.engage()
             let coverFailure = usesCover ? await cover.engage() : nil
+            await input.setUnlockHold(seconds: unlockHoldSeconds)
             let inputFailure = await input.engage()
             if let reason = gammaFailure ?? coverFailure ?? inputFailure {
                 state = .failed(reason)

@@ -32,9 +32,23 @@ private let signingTeamRequirement: String? = {
 public let sameTeamRequirement = signingTeamRequirement ?? "never"
 
 // Keep the displays recoverable in test builds that do not yet implement normal unlock.
-public let testAutoReleaseSeconds = 60.0
+public let testAutoReleaseSeconds = 300.0
 
 public let requestInputMonitoringArgument = "--request-input-monitoring"
+
+public let defaultUnlockHoldSeconds = 5
+
+private let idleExitInterval = DispatchTimeInterval.seconds(30)
+nonisolated(unsafe) private var idleExitTimer: DispatchSourceTimer?
+
+/// Exit when shielding is inactive so launchd starts the latest executable on the next connection.
+public func exitWhenIdle(_ isIdle: @escaping @Sendable () -> Bool) {
+    let timer = DispatchSource.makeTimerSource(queue: .main)
+    timer.schedule(deadline: .now() + idleExitInterval, repeating: idleExitInterval)
+    timer.setEventHandler { if isIdle() { exit(0) } }
+    timer.resume()
+    idleExitTimer = timer
+}
 
 @objc public protocol ShieldLayer {
     /// Check whether this layer can be applied before changing the displays or input.
@@ -43,6 +57,8 @@ public let requestInputMonitoringArgument = "--request-input-monitoring"
     func engage(reply: @escaping @Sendable (String?) -> Void)
     func release(reply: @escaping @Sendable (String?) -> Void)
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void)
+    /// Set the key hold duration for unlock. Only the input layer uses this value.
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void)
     /// Report an unlock request received since the last call. Only the input layer returns true.
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void)
     /// Report whether Esc has been held long enough since the last call. Only the input layer returns true.
