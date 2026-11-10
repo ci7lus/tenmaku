@@ -31,6 +31,7 @@ final class StatusMenu: NSObject {
 
     private var doorDrop: Timer?
     private var doorDropStart = ContinuousClock.now
+    private var doorDropCompletion: CheckedContinuation<Void, Never>?
 
     var indicator: ProtectionIndicator = .unlocked {
         didSet {
@@ -80,6 +81,7 @@ final class StatusMenu: NSObject {
 
         item.menu = menu
         protection.onChange = { [weak self] state in self?.apply(state) }
+        protection.onBeforeEngage = { [weak self] in await self?.waitForDoorDrop() }
     }
 
     private func apply(_ state: ProtectionState) {
@@ -132,6 +134,8 @@ final class StatusMenu: NSObject {
         doorDrop?.invalidate()
         doorDrop = nil
         show(NSImage(named: indicator.imageName))
+        doorDropCompletion?.resume()
+        doorDropCompletion = nil
     }
 
     private func show(_ image: NSImage?) {
@@ -148,6 +152,11 @@ final class StatusMenu: NSObject {
         let timer = Timer(timeInterval: doorDropFrameInterval, target: self, selector: #selector(advanceDoorDrop), userInfo: nil, repeats: true)
         RunLoop.main.add(timer, forMode: .common)
         doorDrop = timer
+    }
+
+    private func waitForDoorDrop() async {
+        guard doorDrop != nil else { return }
+        await withCheckedContinuation { doorDropCompletion = $0 }
     }
 
     @objc private func advanceDoorDrop() {

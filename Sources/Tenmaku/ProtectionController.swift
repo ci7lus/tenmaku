@@ -173,6 +173,7 @@ final class ProtectionController {
     }
     private(set) var unlockFailure: String?
     var onChange: ((ProtectionState) -> Void)?
+    var onBeforeEngage: (() async -> Void)?
 
     private let gamma = LayerClient(service: .gamma)
     private let cover = LayerClient(service: .cover)
@@ -343,6 +344,8 @@ final class ProtectionController {
                 state = .failed(reason)
                 return
             }
+            // Wait for the startup animation before shielding the physical displays.
+            await onBeforeEngage?()
             // Apply the remaining layers after a partial failure. Continue to the input layer so it can receive an unlock request.
             let gammaFailure = await gamma.engage()
             let coverFailure = usesCover ? await cover.engage() : nil
