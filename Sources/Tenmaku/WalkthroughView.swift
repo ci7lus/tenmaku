@@ -77,7 +77,7 @@ enum WalkthroughStep: Int, CaseIterable {
         }
     }
 
-    func message(inputMode: InputProtectionMode) -> AttributedString {
+    func message(inputMode: InputProtectionMode, unlockHoldSeconds: Int, escapeHoldSeconds: Int) -> AttributedString {
         let text = switch self {
         case .welcome:
             L10n.walkthroughWelcomeMessage()
@@ -88,7 +88,7 @@ enum WalkthroughStep: Int, CaseIterable {
         case .postEvent:
             L10n.walkthroughLockMessage()
         case .summary:
-            L10n.walkthroughSummaryMessage()
+            L10n.walkthroughSummaryMessage(unlockHoldSeconds) + "\n**" + L10n.unlockEscapeMessage(escapeHoldSeconds) + "**"
         }
         return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
@@ -118,6 +118,8 @@ enum WalkthroughStep: Int, CaseIterable {
 
 struct WalkthroughView: View {
     @AppStorage(DefaultsKey.walkthroughCompleted) private var completed = false
+    @AppStorage(DefaultsKey.unlockHoldSeconds) private var unlockHoldSeconds = defaultUnlockHoldSeconds
+    @AppStorage(DefaultsKey.escapeHoldSeconds) private var escapeHoldSeconds = defaultEscapeHoldSeconds
     @State private var inputMode: InputProtectionMode = .selected
     @State private var step: WalkthroughStep = .welcome
     @State private var permissions: [WalkthroughStep: PermissionState] = [:]
@@ -129,7 +131,7 @@ struct WalkthroughView: View {
                 header
                 Text(step == .inputMonitoring ? inputMode.permissionTitle : step.title)
                     .font(.title2.weight(.semibold))
-                Text(step.message(inputMode: inputMode))
+                Text(step.message(inputMode: inputMode, unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

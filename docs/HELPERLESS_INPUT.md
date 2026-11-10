@@ -20,7 +20,7 @@ The known limitations come from the [verification record](VERIFICATION.md) and i
 - Some Claude clicks have a PID of zero and are indistinguishable from physical input. Tenmaku blocks those clicks. Support for all Codex and Claude actions without the helper is unverified.
 - Use hardware acceptance tests to assess system keys, dedicated gestures, pointer blocking at the session level, and actions from each client separately.
 
-Measure each hold from the initial key press and ignore repeats. Esc requires a separate 10-second hold. After authentication, continue to discard blocked keys and buttons until they are released. If macOS disables the tap, clear the locked state and keep the remaining shielding in place during handoff to the system lock.
+Measure each hold from the initial key press and ignore repeats. Esc has its own hold duration, which defaults to 10 seconds. Set it to 1–30 seconds in General settings. The new value takes effect at the next activation. After authentication, continue to discard blocked keys and buttons until they are released. If macOS disables the tap, clear the locked state and keep the remaining shielding in place during handoff to the system lock.
 
 Secure Event Input can suppress a key-up event, leaving input marked as held. After authentication, unprivileged input control reports release success only after confirming that the controls are up. If it cannot confirm release within 2 seconds, keep shielding in place and hand off to the system lock. After confirming the lock screen, clear any remaining tracked controls during release so the user can authenticate with macOS. Keep blocking held input regardless of state tables that synthetic events can change.
 

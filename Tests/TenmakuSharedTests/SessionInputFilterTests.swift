@@ -84,7 +84,7 @@ final class SessionInputFilterTests: XCTestCase {
 
     // Key repeat preserves the original hold start and issues only one request.
     func testRepeatHold() throws {
-        var filter = SessionInputFilter(unlockHoldSeconds: 5)
+        var filter = SessionInputFilter(holdDurations: InputHoldDurations(unlockSeconds: 5, escapeSeconds: 10)!)
         filter.engage()
         _ = filter.handle(type: .keyDown, event: event(key: 0), now: 10)
         _ = filter.handle(type: .keyDown, event: event(key: 0, repeating: true), now: 14)
@@ -100,7 +100,7 @@ final class SessionInputFilterTests: XCTestCase {
 
     // Request normal unlock after the configured hold duration.
     func testCustomHoldDuration() throws {
-        var filter = SessionInputFilter(unlockHoldSeconds: 1.5)
+        var filter = SessionInputFilter(holdDurations: InputHoldDurations(unlockSeconds: 1.5, escapeSeconds: 10)!)
         filter.engage()
         _ = filter.handle(type: .keyDown, event: event(key: 9), now: 2)
         try expect(!filter.takeUnlockRequest(now: 3.49), "A request was made before the configured hold threshold")
@@ -109,7 +109,7 @@ final class SessionInputFilterTests: XCTestCase {
 
     // Holding a modifier also requests normal unlock.
     func testModifierHold() throws {
-        var filter = SessionInputFilter(unlockHoldSeconds: 2)
+        var filter = SessionInputFilter(holdDurations: InputHoldDurations(unlockSeconds: 2, escapeSeconds: 10)!)
         filter.engage()
         _ = filter.handle(type: .flagsChanged, event: event(key: 55), now: 1)
         try expect(filter.takeUnlockRequest(now: 3), "The filter missed a Command hold")
@@ -134,7 +134,7 @@ final class SessionInputFilterTests: XCTestCase {
 
     // Brief presses leave no unlock request.
     func testEarlyRelease() throws {
-        var filter = SessionInputFilter(unlockHoldSeconds: 2)
+        var filter = SessionInputFilter(holdDurations: InputHoldDurations(unlockSeconds: 2, escapeSeconds: 10)!)
         filter.engage()
         _ = filter.handle(type: .keyDown, event: event(key: 8), now: 1)
         _ = filter.handle(type: .keyUp, event: event(key: 8), now: 2.9)
@@ -142,9 +142,22 @@ final class SessionInputFilterTests: XCTestCase {
         try expect(!filter.hasPressedControls, "A released key remained tracked as pressed")
     }
 
-    // Holding Esc for 10 seconds requests handoff only.
+    func testCustomEscapeHoldDuration() throws {
+        for escapeSeconds in [1.0, 3, 20, 30] {
+            let durations = try XCTUnwrap(InputHoldDurations(unlockSeconds: 7, escapeSeconds: escapeSeconds))
+            var filter = SessionInputFilter(holdDurations: durations)
+            filter.engage()
+            _ = filter.handle(type: .keyDown, event: event(key: 53), now: 4)
+            try expect(!filter.takeEscapeRequest(now: 4 + escapeSeconds - 0.01), "A request was made before the configured Esc hold threshold")
+            try expect(filter.takeEscapeRequest(now: 4 + escapeSeconds), "The configured Esc hold duration was ignored")
+            try expect(!filter.takeEscapeRequest(now: 100), "A single Esc hold made multiple requests")
+            try expect(!filter.takeUnlockRequest(now: 100), "Esc requested normal unlock")
+        }
+    }
+
+    // By default, holding Esc for 10 seconds requests handoff only.
     func testEscapeHold() throws {
-        var filter = SessionInputFilter(unlockHoldSeconds: 1)
+        var filter = SessionInputFilter(holdDurations: InputHoldDurations(unlockSeconds: 1, escapeSeconds: 10)!)
         filter.engage()
         _ = filter.handle(type: .keyDown, event: event(key: 53), now: 4)
         try expect(!filter.takeUnlockRequest(now: 5), "Esc requested normal unlock")
@@ -209,7 +222,7 @@ final class SessionInputFilterTests: XCTestCase {
 
     // Releasing a modifier resets its hold.
     func testModifierRelease() throws {
-        var filter = SessionInputFilter(unlockHoldSeconds: 2)
+        var filter = SessionInputFilter(holdDurations: InputHoldDurations(unlockSeconds: 2, escapeSeconds: 10)!)
         filter.engage()
         _ = filter.handle(type: .flagsChanged, event: event(key: 56), now: 1)
         try expect(filter.hasPressedControls, "The filter missed the Shift press")

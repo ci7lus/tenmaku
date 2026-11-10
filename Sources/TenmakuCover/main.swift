@@ -15,11 +15,11 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         reply(nil)
     }
 
-    func engage(reply: @escaping @Sendable (NSError?) -> Void) {
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             engaged = true
             reconcile()
@@ -47,10 +47,6 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
 
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
         reply(false)
-    }
-
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
-        reply(nil)
     }
 
     func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) {

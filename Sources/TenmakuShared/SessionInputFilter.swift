@@ -9,7 +9,7 @@ public struct SessionInputFilter {
         var requested = false
     }
 
-    private let unlockHoldSeconds: Double
+    private let holdDurations: InputHoldDurations
     private var pressedKeys: Set<CGKeyCode> = []
     private var pressedButtons: Set<Int64> = []
     private var holds: [CGKeyCode: Hold] = [:]
@@ -20,8 +20,8 @@ public struct SessionInputFilter {
     public var isDraining: Bool { !isEngaged && hasPressedControls }
     public var hasPressedControls: Bool { !pressedKeys.isEmpty || !pressedButtons.isEmpty }
 
-    public init(unlockHoldSeconds: Double = 5) {
-        self.unlockHoldSeconds = unlockHoldSeconds
+    public init(holdDurations: InputHoldDurations = .standard) {
+        self.holdDurations = holdDurations
     }
 
     public mutating func engage(pressedKeys: Set<CGKeyCode> = [], pressedButtons: Set<Int64> = []) {
@@ -120,7 +120,7 @@ public struct SessionInputFilter {
     private mutating func settleDueHolds(now: TimeInterval) {
         guard isEngaged else { return }
         for (code, hold) in holds where !hold.requested {
-            let duration = code == 53 ? 10 : unlockHoldSeconds
+            let duration = holdDurations.seconds(isEscape: code == 53)
             if now - hold.startedAt >= duration {
                 holds[code]?.requested = true
                 if code == 53 { escapeRequested = true } else { unlockRequested = true }

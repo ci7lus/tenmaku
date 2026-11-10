@@ -96,13 +96,13 @@ final class LayerClient {
         held = true
     }
 
-    func preflight() async -> String? {
-        await command { $0.preflight(reply: $1) }
+    func preflight(holdDurations: InputHoldDurations = .standard) async -> String? {
+        await command { $0.preflight(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: $1) }
     }
 
-    func engage() async -> String? {
+    func engage(holdDurations: InputHoldDurations = .standard) async -> String? {
         held = true
-        return await command { $0.engage(reply: $1) }
+        return await command { $0.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: $1) }
     }
 
     func release(afterSessionLock: Bool = false) async -> String? {
@@ -130,10 +130,6 @@ final class LayerClient {
     /// Treat a missing reply as unknown.
     func isEngaged() async -> Bool? {
         await query { $0.isEngaged(reply: $1) }
-    }
-
-    func setUnlockHold(seconds: Int) async {
-        _ = await command { $0.setUnlockHold(seconds: Double(seconds), reply: $1) }
     }
 
     func takeUnlockRequest() async -> Bool {
@@ -390,8 +386,13 @@ final class ProtectionController: ObservableObject {
     private func confirmAndStart() {
         guard canStart else { return }
         let unlockHoldSeconds = UserDefaults.standard.object(forKey: DefaultsKey.unlockHoldSeconds) as? Int ?? defaultUnlockHoldSeconds
+        let escapeHoldSeconds = UserDefaults.standard.object(forKey: DefaultsKey.escapeHoldSeconds) as? Int ?? defaultEscapeHoldSeconds
+        guard let holdDurations = InputHoldDurations(unlockSeconds: Double(unlockHoldSeconds), escapeSeconds: Double(escapeHoldSeconds)) else {
+            state = .failed(L10n.errorInvalidUnlockHold())
+            return
+        }
         showingUnlockGuide = true
-        let confirmed = UnlockGuide.confirmIfNeeded(seconds: unlockHoldSeconds)
+        let confirmed = UnlockGuide.confirmIfNeeded(holdDurations: holdDurations)
         showingUnlockGuide = false
         // State can change asynchronously while the modal is open, for example during restoration.
         guard confirmed, canStart else { return }
@@ -406,7 +407,7 @@ final class ProtectionController: ObservableObject {
         activeInputs = [input]
         state = .starting
         Task {
-            if let reason = await input.preflight() {
+            if let reason = await input.preflight(holdDurations: holdDurations) {
                 state = .failed(reason)
                 return
             }
@@ -415,8 +416,7 @@ final class ProtectionController: ObservableObject {
             // Apply the remaining layers after a partial failure. Continue to the input layer so it can receive an unlock request.
             let gammaFailure = await gamma.engage()
             let coverFailure = usesCover ? await cover.engage() : nil
-            await input.setUnlockHold(seconds: unlockHoldSeconds)
-            let inputFailure = await input.engage()
+            let inputFailure = await input.engage(holdDurations: holdDurations)
             if let reason = gammaFailure ?? coverFailure ?? inputFailure {
                 state = .failed(reason)
             } else {

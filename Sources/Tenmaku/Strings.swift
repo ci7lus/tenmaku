@@ -235,7 +235,7 @@ enum L10n {
     }
 
     static func protectionTouchIdUnavailable(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.touch_id_unavailable", defaultValue: "Touch ID is unavailable. Hold Esc for 10 seconds to switch to the macOS lock screen.", bundle: bundle, locale: locale)
+        String(localized: "protection.touch_id_unavailable", defaultValue: "Touch ID is unavailable. Hold Esc for the configured duration to switch to the macOS lock screen.", bundle: bundle, locale: locale)
     }
 
     static func protectionUnlock(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -248,6 +248,14 @@ enum L10n {
 
     static func settingsDisplayShielding(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "settings.display_shielding", defaultValue: "Operating Mode", bundle: bundle, locale: locale)
+    }
+
+    static func settingsEscapeHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.escape_hold", defaultValue: "Esc Hold Duration", bundle: bundle, locale: locale)
+    }
+
+    static func settingsEscapeHoldMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.escape_hold_message", defaultValue: "How long to hold Esc before switching to the macOS lock screen. Use this when Touch ID is disabled or otherwise unavailable.", bundle: bundle, locale: locale)
     }
 
     static func settingsGammaAndCoverMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -290,12 +298,16 @@ enum L10n {
         String(localized: "shield.gamma_only", defaultValue: "Display Color Adjustment", bundle: bundle, locale: locale)
     }
 
+    static func unlockEscapeMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "unlock.escape_message", defaultValue: "If you cannot unlock with Touch ID, hold Esc for \(arg1) seconds to switch to the macOS lock screen.", bundle: bundle, locale: locale)
+    }
+
     static func unlockGuideHideNextTime(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "unlock_guide.hide_next_time", defaultValue: "Don’t Show This Guide Again", bundle: bundle, locale: locale)
     }
 
     static func unlockGuideMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.message", defaultValue: "To unlock, hold any key except Esc for \(arg1) seconds. When you hear the sound, touch the Touch ID sensor.\n\nIf you cannot unlock with Touch ID, hold Esc for 10 seconds to switch to the macOS lock screen.", bundle: bundle, locale: locale)
+        String(localized: "unlock_guide.message", defaultValue: "To unlock, hold any key except Esc for \(arg1) seconds. When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
     }
 
     static func unlockGuideTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -350,8 +362,8 @@ enum L10n {
         String(localized: "walkthrough.screen_lock", defaultValue: "Screen Locking", bundle: bundle, locale: locale)
     }
 
-    static func walkthroughSummaryMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.summary_message", defaultValue: "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc (5 seconds by default), then touch the Touch ID sensor.\n**If you cannot unlock with Touch ID, hold Esc (10 seconds by default) to switch to the macOS lock screen.**", bundle: bundle, locale: locale)
+    static func walkthroughSummaryMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "walkthrough.summary_message", defaultValue: "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc for \(arg1) seconds, then touch the Touch ID sensor.", bundle: bundle, locale: locale)
     }
 
     static func walkthroughSummaryTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {

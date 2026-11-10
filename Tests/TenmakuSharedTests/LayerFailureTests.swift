@@ -30,7 +30,7 @@ final class LayerFailureTests: XCTestCase {
             XCTFail("XPC: \(error)")
             received.fulfill()
         } as? ShieldLayer)
-        proxy.preflight { error in
+        proxy.preflight(unlockHoldSeconds: 7, escapeHoldSeconds: 3) { error in
             XCTAssertEqual(error?.domain, LayerFailure.domain)
             XCTAssertEqual(error?.code, LayerFailure.inputMonitoringDenied.rawValue)
             XCTAssertEqual((error?.userInfo[LayerFailure.statusKey] as? NSNumber)?.int32Value, -536870174)
@@ -56,12 +56,11 @@ private final class FailureResponder: NSObject, NSXPCListenerDelegate, ShieldLay
         return true
     }
 
-    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         reply(LayerFailure.inputMonitoringDenied.error(status: -536870174))
     }
-    func engage(reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
     func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }
     func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }

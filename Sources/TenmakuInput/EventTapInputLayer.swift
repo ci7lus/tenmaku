@@ -10,7 +10,6 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
     private var faulted = false
-    private var unlockHoldSeconds = Double(defaultUnlockHoldSeconds)
     private var sleepAssertion: IOPMAssertionID?
     private var generation = 0
     private var releaseReplies: [@Sendable (NSError?) -> Void] = []
@@ -22,8 +21,11 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         .otherMouseDown, .otherMouseUp, .otherMouseDragged, .scrollWheel,
     ]
 
-    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
+            guard InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) != nil else {
+                return reply(LayerFailure.invalidUnlockHold.error())
+            }
             if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
             if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
             if let failure = permissionFailure() { return reply(failure) }
@@ -43,8 +45,11 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func engage(reply: @escaping @Sendable (NSError?) -> Void) {
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
+            guard let durations = InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) else {
+                return reply(LayerFailure.invalidUnlockHold.error())
+            }
             if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
             if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
             if let failure = permissionFailure() { return reply(failure) }
@@ -73,7 +78,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                       CGEventSource.buttonState(.hidSystemState, button: button) else { return nil }
                 return Int64(number)
             })
-            filter = SessionInputFilter(unlockHoldSeconds: unlockHoldSeconds)
+            filter = SessionInputFilter(holdDurations: durations)
             filter.engage(pressedKeys: keys, pressedButtons: buttons)
             CFRunLoopAddSource(CFRunLoopGetMain(), newSource, .commonModes)
             preventIdleSleep()
@@ -108,14 +113,6 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
 
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {
         DispatchQueue.main.async { [self] in reply(filter.isEngaged && isHealthy) }
-    }
-
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
-        DispatchQueue.main.async { [self] in
-            guard (1...30).contains(seconds) else { return reply(LayerFailure.invalidUnlockHold.error()) }
-            unlockHoldSeconds = seconds
-            reply(nil)
-        }
     }
 
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {

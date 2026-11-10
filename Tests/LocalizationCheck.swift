@@ -13,6 +13,9 @@ struct LocalizationCheck {
         check(L10n.settingsUnlockHoldSeconds(5), english ? "5 seconds" : "5秒")
         precondition(L10n.unlockGuideMessage(7).contains(english ? "7 seconds" : "7秒"))
         precondition(L10n.unlockGuideMessage(1).contains(english ? "1 second." : "1秒"))
+        precondition(L10n.unlockEscapeMessage(3).contains(english ? "3 seconds" : "3秒"))
+        precondition(L10n.unlockEscapeMessage(1).contains(english ? "1 second to" : "1秒"))
+        precondition(L10n.walkthroughSummaryMessage(7).contains(english ? "7 seconds" : "7秒"))
         check(L10n.menuFailed("DETAIL"), english ? "Failed: DETAIL" : "失敗: DETAIL")
         check(localizedLayerError(LayerFailure.gammaFailed.error()),
               english ? "Could not adjust the colors on some displays." : "表示色を変更できなかった画面があります")

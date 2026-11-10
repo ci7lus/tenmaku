@@ -1052,13 +1052,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touch IDを使えません。Escを10秒長押しするとロック画面へ移ります"
+            "value": "Touch IDを使えません。Escを設定した秒数だけ長押しするとロック画面へ移ります"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touch ID is unavailable. Hold Esc for 10 seconds to switch to the macOS lock screen."
+            "value": "Touch ID is unavailable. Hold Esc for the configured duration to switch to the macOS lock screen."
           }
         }
       }
@@ -1113,6 +1113,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "Operating Mode"
+          }
+        }
+      }
+    },
+    "settings.escape_hold": {
+      "comment": "How many seconds to hold Esc to switch to the macOS lock screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escホールド時間"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esc Hold Duration"
+          }
+        }
+      }
+    },
+    "settings.escape_hold_message": {
+      "comment": "Separate from the normal Touch ID release hold duration. Changes take effect at the next lock.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escを長押ししてmacOSのロック画面へ移るまでの秒数です。Touch IDが無効化された場合などに用います。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How long to hold Esc before switching to the macOS lock screen. Use this when Touch ID is disabled or otherwise unavailable."
           }
         }
       }
@@ -1309,6 +1345,36 @@
         }
       }
     },
+    "unlock.escape_message": {
+      "comment": "The argument is the Esc hold duration for this lock in seconds. Used on the setup completion screen and in the guide shown before starting.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch IDで解除できないときは、Escを%lld秒間押し続けるとmacOSのロック画面へ移ります。"
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "If you cannot unlock with Touch ID, hold Esc for %lld second to switch to the macOS lock screen."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "If you cannot unlock with Touch ID, hold Esc for %lld seconds to switch to the macOS lock screen."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "unlock_guide.hide_next_time": {
       "comment": "Checkbox to skip the guide for future locks.",
       "extractionState": "manual",
@@ -1328,13 +1394,13 @@
       }
     },
     "unlock_guide.message": {
-      "comment": "The argument is the hold duration for this lock in seconds. The alternative Esc procedure takes 10 seconds.",
+      "comment": "The argument is the number of seconds to hold before Touch ID authentication. The Esc instructions have their own string.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを解除するには、Esc以外のキーを%lld秒間押し続け、音が鳴ったらTouch IDに触れてください。\n\nTouch IDで解除できないときは、Escを10秒間押し続けるとmacOSのロック画面へ移ります。"
+            "value": "ロックを解除するには、Esc以外のキーを%lld秒間押し続け、音が鳴ったらTouch IDに触れてください。"
           }
         },
         "en": {
@@ -1343,13 +1409,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "To unlock, hold any key except Esc for %lld second. When you hear the sound, touch the Touch ID sensor.\n\nIf you cannot unlock with Touch ID, hold Esc for 10 seconds to switch to the macOS lock screen."
+                  "value": "To unlock, hold any key except Esc for %lld second. When you hear the sound, touch the Touch ID sensor."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "To unlock, hold any key except Esc for %lld seconds. When you hear the sound, touch the Touch ID sensor.\n\nIf you cannot unlock with Touch ID, hold Esc for 10 seconds to switch to the macOS lock screen."
+                  "value": "To unlock, hold any key except Esc for %lld seconds. When you hear the sound, touch the Touch ID sensor."
                 }
               }
             }
@@ -1592,19 +1658,31 @@
       }
     },
     "walkthrough.summary_message": {
-      "comment": "The default hold durations are 5 seconds for the release key and 10 seconds for Esc. After the sound, the user authenticates with Touch ID.",
+      "comment": "The argument is the configured hold duration for normal release in seconds. The Esc instructions follow in bold.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "メニューのアイコンからロックを開始します。\n解除するときは、Esc以外のキーを長押し（既定は5秒）して、Touch IDに触れます。\n**Touch IDで解除できないときは、Escを長押し（既定は10秒）するとロック画面へ移ります。**"
+            "value": "メニューのアイコンからロックを開始します。\n解除するときは、Esc以外のキーを長押し（%lld秒）して、Touch IDに触れます。"
           }
         },
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc (5 seconds by default), then touch the Touch ID sensor.\n**If you cannot unlock with Touch ID, hold Esc (10 seconds by default) to switch to the macOS lock screen.**"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc for %lld second, then touch the Touch ID sensor."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc for %lld seconds, then touch the Touch ID sensor."
+                }
+              }
+            }
           }
         }
       }

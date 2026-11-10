@@ -41,6 +41,7 @@ public let requestInputMonitoringArgument = "--request-input-monitoring"
 public let requestSessionInputAccessArgument = "--request-input-access"
 
 public let defaultUnlockHoldSeconds = 5
+public let defaultEscapeHoldSeconds = 10
 
 private let idleExitInterval = DispatchTimeInterval.seconds(30)
 nonisolated(unsafe) private var idleExitTimer: DispatchSourceTimer?
@@ -56,14 +57,13 @@ public func exitWhenIdle(_ isIdle: @escaping @Sendable () -> Bool) {
 
 @objc public protocol ShieldLayer {
     /// Check whether this layer can be applied before changing the displays or input.
-    func preflight(reply: @escaping @Sendable (NSError?) -> Void)
+    /// Input layers also check the hold durations and apply the same settings passed to engage.
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void)
     /// Return nil if application was confirmed, or a LayerFailure error otherwise.
-    func engage(reply: @escaping @Sendable (NSError?) -> Void)
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void)
     /// Pass true for afterSessionLock only after confirming the lock screen is present.
     func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void)
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void)
-    /// Set the key hold duration for unlock. Only the input layer uses this value.
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void)
     /// Report an unlock request received since the last call. Only the input layer returns true.
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void)
     /// Report whether Esc has been held long enough since the last call. Only the input layer returns true.

@@ -6,7 +6,6 @@ import TenmakuShared
 
 private let seizeOption = IOOptionBits(kIOHIDOptionsTypeSeizeDevice)
 private let drainTimeoutSeconds = 30.0
-private let escapeHoldSeconds = 10.0
 private let escapeUsage = UInt32(kHIDUsage_KeyboardEscape)
 
 private struct PressedControl: Hashable {
@@ -26,7 +25,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var unlockRequested = false
     private var escapeRequested = false
     private var holds: [PressedControl: DispatchWorkItem] = [:]
-    private var unlockHoldSeconds = Double(defaultUnlockHoldSeconds)
+    private var holdDurations = InputHoldDurations.standard
     private var generation = 0
     private var sleepAssertion: IOPMAssertionID?
     #if TENMAKU_TEST_BUILD
@@ -48,8 +47,11 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
     }
 
-    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
+            guard InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) != nil else {
+                return reply(LayerFailure.invalidUnlockHold.error())
+            }
             guard !engaged else { return reply(nil) }
             guard let device = physicalDevices().first else { return reply(LayerFailure.inputDevicesMissing.error()) }
             let result = IOHIDDeviceOpen(device, seizeOption)
@@ -64,10 +66,14 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func engage(reply: @escaping @Sendable (NSError?) -> Void) {
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
+            guard let durations = InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) else {
+                return reply(LayerFailure.invalidUnlockHold.error())
+            }
             let devices = physicalDevices()
             guard !devices.isEmpty else { return reply(LayerFailure.inputDevicesMissing.error()) }
+            holdDurations = durations
             engaged = true
             complete = true
             draining = false
@@ -99,13 +105,6 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
 
     func isIdle() -> Bool {
         !engaged && seized.isEmpty
-    }
-
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
-        DispatchQueue.main.async { [self] in
-            unlockHoldSeconds = seconds
-            reply(nil)
-        }
     }
 
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
@@ -251,7 +250,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    // Using Esc to request unlock would start Touch ID during the 10-second hold.
+    // Track the Esc hold independently of normal unlock and skip Touch ID for Esc.
     private func beginHold(_ control: PressedControl, isEscape: Bool) {
         holds[control]?.cancel()
         let hold = DispatchWorkItem { [self] in
@@ -259,7 +258,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
             if isEscape { escapeRequested = true } else { unlockRequested = true }
         }
         holds[control] = hold
-        DispatchQueue.main.asyncAfter(deadline: .now() + (isEscape ? escapeHoldSeconds : unlockHoldSeconds), execute: hold)
+        DispatchQueue.main.asyncAfter(deadline: .now() + holdDurations.seconds(isEscape: isEscape), execute: hold)
     }
 
     private func deviceAppeared(_ device: IOHIDDevice) {

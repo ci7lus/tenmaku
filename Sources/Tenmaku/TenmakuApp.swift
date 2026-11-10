@@ -35,4 +35,5 @@ enum DefaultsKey {
     static let walkthroughCompleted = "walkthroughCompleted"
     static let shieldMode = "shieldMode"
     static let unlockHoldSeconds = "unlockHoldSeconds"
+    static let escapeHoldSeconds = "escapeHoldSeconds"
 }

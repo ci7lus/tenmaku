@@ -54,6 +54,8 @@ Separate the gamma and concealment window layers into different processes so one
 
 ## Start and unlock sequence
 
+Configure normal unlock and Esc hold durations independently. Both range from 1 to 30 seconds. Normal unlock defaults to 5 seconds and Esc to 10 seconds. Pass both durations in the preflight and apply XPC requests. The input layer adopts them on apply. Preflight leaves the active settings in place.
+
 ### Start
 
 Check the display configuration and stop if mirroring is active. Then apply gamma, show concealment windows if enabled, and seize input devices in that order. Verify that all layers are in place before reporting the locked state.
@@ -68,7 +70,7 @@ Without the helper, user-level input control makes the same unlock request. Secu
 
 ## Handoff to the session lock
 
-Hand off when the helper stops. If Touch ID is unavailable, such as during `biometryLockout`, handoff requires the user to hold Esc for 10 seconds after a failed unlock while the app is still locked, or during an interruption caused by a macOS session lock. See [Fallback to macOS Session Lock](SPEC.md#fallback-to-macos-session-lock).
+Hand off when the helper stops. If Touch ID is unavailable, such as during `biometryLockout`, handoff requires the user to hold Esc for its configured duration (10 seconds by default) after a failed unlock while the app is still locked, or during an interruption caused by a macOS session lock. See [Fallback to macOS Session Lock](SPEC.md#fallback-to-macos-session-lock).
 
 1. Keep the remaining protections in place and send Control-Command-Q.
 2. Wait for all three conditions.
