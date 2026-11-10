@@ -1,6 +1,6 @@
 # Input Control Without the Helper
 
-On 2026-11-10, the user chose to make the privileged helper optional and allow Tenmaku to start protection without it after explaining the limitations.
+On 2026-11-10, the user chose to make the privileged helper optional and allow Tenmaku to start the app lock without it after explaining the limitations.
 
 ## Architecture and Decisions
 
@@ -8,7 +8,7 @@ On 2026-11-10, the user chose to make the privileged helper optional and allow T
 - The input layer implements the existing `ShieldLayer` protocol. Both modes share the display layers, Touch ID, state monitoring, and handoff to the system lock.
 - Setup includes an optional Install button. Click Next without installing to skip the helper. Tenmaku uses the helper when it is installed and approved. In every other case it runs without the helper. General settings displays the current mode. The mode stays fixed for the duration of the app lock, and installation changes take effect at the next activation.
 - When the UI restarts, check both input services for active protections independently of the setting. If more than one input layer remains active, keep them all until authentication succeeds.
-- Use separate XPC calls to confirm protection and to check for remaining changes or pending input releases. Restore tracking when the tap has failed or an input release is pending. A missing reply leaves the state unknown.
+- Use separate XPC calls to confirm the app lock and to check for remaining changes or pending input releases. Restore tracking when the tap has failed or an input release is pending. A missing reply leaves the state unknown.
 
 ## Input Handling and Limitations
 
@@ -16,11 +16,11 @@ Unprivileged input control uses a session-level event tap. Apple's documentation
 
 The known limitations come from the [verification record](VERIFICATION.md) and its [summary](VERIFICATION_SUMMARY.md).
 
-- While Secure Event Input is active, Tenmaku cannot block physical keystrokes or detect the unlock hold or the Esc fallback. Codex and other clients can choose End Protection… in the menu or General settings to request Touch ID authentication. Tenmaku blocks the physical mouse, so this command requires a client that can still operate the app. Protection stays active until authentication succeeds.
+- While Secure Event Input is active, Tenmaku cannot block physical keystrokes or detect the unlock hold or the Esc fallback. Codex and other clients can choose Unlock… in the menu or General settings to request Touch ID authentication. Tenmaku blocks the physical mouse, so this command requires a client that can still operate the app. The app lock stays active until authentication succeeds.
 - Some Claude clicks have a PID of zero and are indistinguishable from physical input. Tenmaku blocks those clicks. Support for all Codex and Claude actions without the helper is unverified.
 - Use hardware acceptance tests to assess system keys, dedicated gestures, pointer blocking at the session level, and actions from each client separately.
 
-Measure each hold from the initial key press and ignore repeats. Esc requires a separate 10-second hold. After authentication, continue to discard blocked keys and buttons until they are released. If macOS disables the tap, clear the protected state and keep the remaining shielding in place during handoff to the system lock.
+Measure each hold from the initial key press and ignore repeats. Esc requires a separate 10-second hold. After authentication, continue to discard blocked keys and buttons until they are released. If macOS disables the tap, clear the locked state and keep the remaining shielding in place during handoff to the system lock.
 
 Secure Event Input can suppress a key-up event, leaving input marked as held. After authentication, unprivileged input control reports release success only after confirming that the controls are up. If it cannot confirm release within 2 seconds, keep shielding in place and hand off to the system lock. After confirming the lock screen, clear any remaining tracked controls during release so the user can authenticate with macOS. Keep blocking held input regardless of state tables that synthetic events can change.
 
@@ -44,6 +44,6 @@ On 2026-11-10, `swift test` passed 23 unit tests covering input classification, 
 
 Verification covered production and test builds, universal app packaging and signing, and the LaunchAgent configuration. A standalone probe that called the input agent's preflight could create a keyboard tap that passed input through. This used the probe process's permissions. The behavior and permission setup of the signed TenmakuInput app with the user's grants remain unverified.
 
-In a preview with no-op protection and permission requests, verification exercised Setup's optional installation and the Next button's skip flow. It also checked each mode's explanation, the permission instructions and status, and the mode indicator and unlock button in General settings.
+In a preview with no-op lock and permission requests, verification exercised Setup's optional installation and the Next button's skip flow. It also checked each mode's explanation, the permission instructions and status, and the mode indicator and unlock button in General settings.
 
 Hardware verification remains pending for helperless physical input blocking, pointer input, compatibility with actual clients, Touch ID, and maintaining protection during failures and UI restarts. Tests that darken physical displays require prior user confirmation. Unit test and build results do not satisfy these acceptance tests.

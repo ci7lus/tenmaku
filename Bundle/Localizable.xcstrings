@@ -1,0 +1,1584 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "connection.failed": {
+      "comment": "The XPC connection failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接続できませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not connect."
+          }
+        }
+      }
+    },
+    "connection.no_response": {
+      "comment": "The argument is the error description returned by the OS.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "応答がありません: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No response: %@"
+          }
+        }
+      }
+    },
+    "connection.timeout": {
+      "comment": "The XPC response timed out.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "応答がありません"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No response."
+          }
+        }
+      }
+    },
+    "error.cover_failed": {
+      "comment": "Treat partial display coverage as a failure.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遮蔽用領域を表示できなかった画面があります"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not show the shielding area on some displays."
+          }
+        }
+      }
+    },
+    "error.gamma_failed": {
+      "comment": "Could not verify the gamma values that shield the displays.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示色を変更できなかった画面があります"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not adjust the colors on some displays."
+          }
+        }
+      }
+    },
+    "error.input_accessibility_denied": {
+      "comment": "Keep the name of the app that needs permission unchanged.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TenmakuInputのアクセシビリティを許可してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Accessibility for TenmakuInput."
+          }
+        }
+      }
+    },
+    "error.input_control_monitor_failed": {
+      "comment": "Could not start monitoring the event tap.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力の制御を監視できませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not monitor input control."
+          }
+        }
+      }
+    },
+    "error.input_control_start_failed": {
+      "comment": "Could not start the event tap.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力の制御を開始できませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not start input control."
+          }
+        }
+      }
+    },
+    "error.input_control_stopped": {
+      "comment": "The input event tap is inactive.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力の制御が停止しています"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Input control has stopped."
+          }
+        }
+      }
+    },
+    "error.input_controls_held": {
+      "comment": "Input controls are still pressed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "押しているキーとクリックを離してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Release any keys and mouse buttons you are holding."
+          }
+        }
+      }
+    },
+    "error.input_device_seize_failed": {
+      "comment": "Exclusive access to a physical device failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力機器を取得できませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not take exclusive control of the input devices."
+          }
+        }
+      }
+    },
+    "error.input_devices_missing": {
+      "comment": "Error returned by the input helper.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力機器が見つかりません"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No input devices were found."
+          }
+        }
+      }
+    },
+    "error.input_listen_denied": {
+      "comment": "Keep the name of the app that needs permission unchanged.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TenmakuInputの入力監視を許可してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Input Monitoring for TenmakuInput."
+          }
+        }
+      }
+    },
+    "error.input_monitoring_denied": {
+      "comment": "An OS error without an error code.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力監視の許可を確認してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the Input Monitoring permission."
+          }
+        }
+      }
+    },
+    "error.input_monitoring_status": {
+      "comment": "The argument is a hexadecimal IOKit status value. Keep it as provided.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力監視の許可を確認してください（%@）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the Input Monitoring permission (%@)."
+          }
+        }
+      }
+    },
+    "error.input_permissions_missing": {
+      "comment": "Keep the name of the app that needs permission unchanged.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TenmakuInputの入力監視とアクセシビリティの許可を確認してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the Input Monitoring and Accessibility permissions for TenmakuInput."
+          }
+        }
+      }
+    },
+    "error.input_release_unconfirmed": {
+      "comment": "Reports a failure while keeping input blocked.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーとクリックが離されたことを確認できませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not confirm that all keys and mouse buttons were released."
+          }
+        }
+      }
+    },
+    "error.invalid_unlock_hold": {
+      "comment": "Allowed range for the setting.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "長押しの時間は1〜30秒の間で設定してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the hold duration between 1 and 30 seconds."
+          }
+        }
+      }
+    },
+    "error.unknown": {
+      "comment": "An unknown XPC error. Treat it as a failure.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックの処理で不明なエラーが発生しました"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unknown lock error occurred."
+          }
+        }
+      }
+    },
+    "input.permission_control": {
+      "comment": "Permissions needed to run without the helper.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力の制御を許可する"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Input Control"
+          }
+        }
+      }
+    },
+    "input.permission_event_tap_message": {
+      "comment": "TenmakuInput is the app that needs permission. The user authenticates in person.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロック中にマウスとキーボードの入力をブロックするため、監視とアクセシビリティを許可してください。Secure Event Inputもブロックしたい場合は、戻ってヘルパーを導入してください。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Input Monitoring and Accessibility to block keyboard and mouse input while locked. To also block input during Secure Event Input, go back and install the helper."
+          }
+        }
+      }
+    },
+    "input.permission_helper_message": {
+      "comment": "TenmakuHelper is the app that needs permission.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーがキーボードとマウスを取得するために、入力監視を許可してください。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Input Monitoring so the helper can take control of the keyboard and mouse."
+          }
+        }
+      }
+    },
+    "input.permission_monitoring": {
+      "comment": "The macOS Input Monitoring permission.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力監視を許可する"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Input Monitoring"
+          }
+        }
+      }
+    },
+    "input.with_helper": {
+      "comment": "Current input blocking method.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーあり"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With Helper"
+          }
+        }
+      }
+    },
+    "input.without_helper": {
+      "comment": "Current input blocking method.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーなし"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without Helper"
+          }
+        }
+      }
+    },
+    "menu.failed": {
+      "comment": "The argument is the localized reason for the failure.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "失敗: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed: %@"
+          }
+        }
+      }
+    },
+    "menu.handing_off": {
+      "comment": "The argument is the localized reason for switching to the lock screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOSの画面ロックに切り替えています: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switching to the macOS lock screen: %@"
+          }
+        }
+      }
+    },
+    "menu.idle": {
+      "comment": "App lock status.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未ロック"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlocked"
+          }
+        }
+      }
+    },
+    "menu.interrupted": {
+      "comment": "The app lock is suspended while macOS is locked.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中断中（macOSの画面がロックされています）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interrupted (macOS Screen Locked)"
+          }
+        }
+      }
+    },
+    "menu.quit": {
+      "comment": "Quits the app.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenmakuを終了"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Tenmaku"
+          }
+        }
+      }
+    },
+    "menu.settings": {
+      "comment": "Opens the Settings window.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
+          }
+        }
+      }
+    },
+    "menu.shielded": {
+      "comment": "App lock status.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロック中"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locked"
+          }
+        }
+      }
+    },
+    "menu.starting": {
+      "comment": "App lock status.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックを開始しています…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Locking…"
+          }
+        }
+      }
+    },
+    "menu.test_start": {
+      "comment": "Shown only in test builds.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遮蔽を開始（試験用）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Shielding (Test)"
+          }
+        }
+      }
+    },
+    "menu.test_stop": {
+      "comment": "Shown only in test builds.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遮蔽を終了（試験用）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop Shielding (Test)"
+          }
+        }
+      }
+    },
+    "menu.unlock_failed": {
+      "comment": "The argument is the localized reason that release failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除できませんでした: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not unlock: %@"
+          }
+        }
+      }
+    },
+    "permission.granted": {
+      "comment": "Permission status.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "許可済み"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allowed"
+          }
+        }
+      }
+    },
+    "permission.helper_required": {
+      "comment": "Helper permissions can be checked after installation.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーをインストールしてから確認します"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked After Installing Helper"
+          }
+        }
+      }
+    },
+    "permission.missing": {
+      "comment": "Permission status.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未許可"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Allowed"
+          }
+        }
+      }
+    },
+    "permission.needs_approval": {
+      "comment": "The user needs to approve the app in Login Items.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "承認待ち"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Awaiting Approval"
+          }
+        }
+      }
+    },
+    "permission.not_installed": {
+      "comment": "The optional helper is not installed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未インストール"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not Installed"
+          }
+        }
+      }
+    },
+    "permission.skipped": {
+      "comment": "The user skipped the optional installation.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スキップ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skipped"
+          }
+        }
+      }
+    },
+    "permission.unknown": {
+      "comment": "The app could not obtain permission.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状態を確認できません"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Check Status"
+          }
+        }
+      }
+    },
+    "protection.authentication_failed": {
+      "comment": "Touch ID authentication failed or was canceled.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "認証されませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authentication was not successful."
+          }
+        }
+      }
+    },
+    "protection.authentication_timeout": {
+      "comment": "Touch ID authentication timed out.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "応答がありませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authentication timed out."
+          }
+        }
+      }
+    },
+    "protection.cover_lost": {
+      "comment": "Reason the app lock failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画面の遮蔽用領域が失われました"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The display shielding area was lost."
+          }
+        }
+      }
+    },
+    "protection.displays_unknown": {
+      "comment": "Could not enumerate displays.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画面の構成を確認できませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not check the display configuration."
+          }
+        }
+      }
+    },
+    "protection.escape_held": {
+      "comment": "Reason the user requested a switch to the lock screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escの長押しを検知しました"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esc was held down."
+          }
+        }
+      }
+    },
+    "protection.gamma_lost": {
+      "comment": "Reason the app lock failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示色変更による遮蔽が失われました"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display color adjustment no longer hides the screen."
+          }
+        }
+      }
+    },
+    "protection.input_lost": {
+      "comment": "Reason the app lock failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力を遮断できなくなりました"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Input can no longer be blocked."
+          }
+        }
+      }
+    },
+    "protection.lock_permission_required": {
+      "comment": "Use the same wording as the setup item.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「画面ロックの操作」を許可してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Screen Locking."
+          }
+        }
+      }
+    },
+    "protection.login_items_required": {
+      "comment": "Permission to run in the background.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム設定の「ログイン項目」でTenmakuを許可してください"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Tenmaku in Login Items in System Settings."
+          }
+        }
+      }
+    },
+    "protection.mirrored": {
+      "comment": "Displays switched to mirroring while the app was locked.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミラー表示には対応していません"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display mirroring is not supported."
+          }
+        }
+      }
+    },
+    "protection.mirrored_start": {
+      "comment": "Display mirroring is unsupported.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミラー表示の間はロックを開始できません"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cannot lock while display mirroring is on."
+          }
+        }
+      }
+    },
+    "protection.registration_failed": {
+      "comment": "The argument is the error description returned by the OS.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登録できませんでした: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not register: %@"
+          }
+        }
+      }
+    },
+    "protection.start": {
+      "comment": "Button that starts display shielding and input blocking.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックを開始"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lock"
+          }
+        }
+      }
+    },
+    "protection.state_unknown": {
+      "comment": "Could not restore the app lock.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックの状態を確認できませんでした"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not verify the lock status."
+          }
+        }
+      }
+    },
+    "protection.touch_id_unavailable": {
+      "comment": "The user must hold Esc to lock macOS.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch IDを使えません。Escを10秒長押しするとロック画面へ移ります"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID is unavailable. Hold Esc for 10 seconds to switch to the macOS lock screen."
+          }
+        }
+      }
+    },
+    "protection.unlock": {
+      "comment": "Button that requests Touch ID authentication.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックを解除…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock…"
+          }
+        }
+      }
+    },
+    "protection.unlock_reason": {
+      "comment": "Reason shown in the system Touch ID authentication dialog.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenmakuのロックを解除します"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Tenmaku"
+          }
+        }
+      }
+    },
+    "settings.display_shielding": {
+      "comment": "Label for selecting the display shielding method.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "動作モード"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operating Mode"
+          }
+        }
+      }
+    },
+    "settings.gamma_and_cover_message": {
+      "comment": "Gamma and cover windows run in separate processes.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示色変更（ガンマ値変更）と不透明な表示レイヤーの二重防御で画面の露出を防ぎます。\n表示レイヤーのキャプチャからの除外は仕様として保証されておらず、将来のmacOSバージョンでは映り込んでしまう場合があります。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses display color adjustment (gamma adjustment) and an opaque display layer to keep screen contents hidden.\nThe system does not guarantee that the display layer is excluded from captures. It may appear in captures on future versions of macOS."
+          }
+        }
+      }
+    },
+    "settings.gamma_only_message": {
+      "comment": "Mention that another app quitting can also restore gamma.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示色変更のみで画面の露出を防ぎます。\n設定したプロセス（このアプリ以外も含む）が終了したり、画面の構成が変わったりすると、元に戻り、画面の内容が見えてしまうことがあります。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses display color adjustment alone to keep screen contents hidden.\nIf a process that applied the adjustment exits, including another app, or the display configuration changes, the colors may reset and reveal the screen contents."
+          }
+        }
+      }
+    },
+    "settings.general": {
+      "comment": "Settings tab name. Use the same translation when referring to the tab in explanatory text.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一般"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "General"
+          }
+        }
+      }
+    },
+    "settings.input_blocking": {
+      "comment": "Item label used in Settings and on the setup completion screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力の遮断"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Input Blocking"
+          }
+        }
+      }
+    },
+    "settings.unlock_hold": {
+      "comment": "Label for the hold duration in General settings. The counter on the right shows the number of seconds.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロック解除ホールド時間"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hold Duration to Unlock"
+          }
+        }
+      }
+    },
+    "settings.unlock_hold_message": {
+      "comment": "Holding the key requests authentication. Successful Touch ID authentication ends shielding.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックを解除するには、Esc以外のキーをここで指定した秒数だけ押したあと、Touch IDに触れます。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To unlock, hold any key except Esc for the number of seconds set here, then touch the Touch ID sensor."
+          }
+        }
+      }
+    },
+    "settings.unlock_hold_seconds": {
+      "comment": "Hold duration counter. Shows only a whole number from 1 to 30 and the unit in seconds.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld秒"
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld second"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "settings.walkthrough": {
+      "comment": "Settings tab name. Use the same translation when referring to the tab in explanatory text.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "はじめに"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Getting Started"
+          }
+        }
+      }
+    },
+    "shield.gamma_and_cover": {
+      "comment": "Option for the display shielding method.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示色変更と遮蔽用領域"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Color Adjustment and Shielding Area"
+          }
+        }
+      }
+    },
+    "shield.gamma_only": {
+      "comment": "Option for the display shielding method.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表示色変更"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display Color Adjustment"
+          }
+        }
+      }
+    },
+    "walkthrough.back": {
+      "comment": "Goes to the previous setup page.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "戻る"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back"
+          }
+        }
+      }
+    },
+    "walkthrough.done": {
+      "comment": "Closes setup after completion.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完了"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "walkthrough.helper_message": {
+      "comment": "Installation is optional. Include the limitations of running without the helper.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーをインストールすると、通常のキーボード操作・マウス操作に加えて、Secure Event Input中も入力を防止することが出来ます。\nいったんスキップして、後からインストールすることも出来ます。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installing the helper lets Tenmaku block keyboard and mouse input, including while Secure Event Input is active.\nYou can skip this step and install it later."
+          }
+        }
+      }
+    },
+    "walkthrough.helper_title": {
+      "comment": "Make it clear that installation is optional.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーのインストール（任意）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install Helper (Optional)"
+          }
+        }
+      }
+    },
+    "walkthrough.input_control": {
+      "comment": "Permission item on the setup completion screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "入力の制御"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Input Control"
+          }
+        }
+      }
+    },
+    "walkthrough.install": {
+      "comment": "Installs the optional helper.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "インストール"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install"
+          }
+        }
+      }
+    },
+    "walkthrough.lock_message": {
+      "comment": "Normal release uses Touch ID. This action locks macOS after a failure.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックを続けられなくなったときに、macOSの画面をロックするために使います。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This permission lets Tenmaku switch to the macOS lock screen if it can no longer maintain the app lock."
+          }
+        }
+      }
+    },
+    "walkthrough.lock_title": {
+      "comment": "Permission to lock macOS if a failure occurs.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画面ロックの操作を許可する"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow Screen Locking"
+          }
+        }
+      }
+    },
+    "walkthrough.next": {
+      "comment": "Goes to the next setup page.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次へ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        }
+      }
+    },
+    "walkthrough.open_login_items": {
+      "comment": "Opens macOS System Settings.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ログイン項目を開く"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Login Items"
+          }
+        }
+      }
+    },
+    "walkthrough.request_permission": {
+      "comment": "Opens the macOS permission dialog.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "許可を求める"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request Permission"
+          }
+        }
+      }
+    },
+    "walkthrough.screen_lock": {
+      "comment": "Permission item on the setup completion screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "画面ロックの操作"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Locking"
+          }
+        }
+      }
+    },
+    "walkthrough.summary_message": {
+      "comment": "The default hold durations are 5 seconds for the release key and 10 seconds for Esc. After the sound, the user authenticates with Touch ID.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "メニューのアイコンからロックを開始します。\n解除するときは、Esc以外のキーを長押し（既定は5秒）して、Touch IDに触れます。\n**Touch IDで解除できないときは、Escを長押し（既定は10秒）するとロック画面へ移ります。**"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc (5 seconds by default), then touch the Touch ID sensor.\n**If you cannot unlock with Touch ID, hold Esc (10 seconds by default) to switch to the macOS lock screen.**"
+          }
+        }
+      }
+    },
+    "walkthrough.summary_title": {
+      "comment": "Heading on the setup completion screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "状態"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        }
+      }
+    },
+    "walkthrough.welcome_message": {
+      "comment": "Distinguish physical input restrictions from AI control.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "作業中のmacOSを他者の操作から保護できます。\nComputer Useからは操作できる状態をキープします。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prevent others from using your Mac while work is in progress.\nComputer Use can continue to operate it."
+          }
+        }
+      }
+    },
+    "walkthrough.welcome_title": {
+      "comment": "Setup heading.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tenmakuへようこそ"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Tenmaku"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -71,7 +71,7 @@ struct AnimationCheck {
         let elapsed = ContinuousClock.now - started
         let final = pixels(item.button!.image!)
         print("\(throughMenu ? "Menu" : "Settings"): \(elapsed) until shielding, \(frames.count) distinct frames, door closed at end: \(final == closed)")
-        precondition(protection.engaged, "Protection did not start")
+        precondition(protection.engaged, "Locking did not start")
         if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
             precondition(frames.subtracting([open, closed]).count >= 8, "Shielding started before the intermediate frames appeared")
         }

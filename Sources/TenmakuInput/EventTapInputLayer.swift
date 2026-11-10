@@ -13,7 +13,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var unlockHoldSeconds = Double(defaultUnlockHoldSeconds)
     private var sleepAssertion: IOPMAssertionID?
     private var generation = 0
-    private var releaseReplies: [@Sendable (String?) -> Void] = []
+    private var releaseReplies: [@Sendable (NSError?) -> Void] = []
 
     private static let eventTypes: [CGEventType] = [
         .keyDown, .keyUp, .flagsChanged, .mouseMoved,
@@ -22,10 +22,10 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         .otherMouseDown, .otherMouseUp, .otherMouseDragged, .scrollWheel,
     ]
 
-    func preflight(reply: @escaping @Sendable (String?) -> Void) {
+    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
-            if filter.isEngaged { return reply(isHealthy ? nil : "Input control has stopped.") }
-            if filter.isDraining { return reply("Release the keys and mouse buttons you are holding.") }
+            if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
+            if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
             if let failure = permissionFailure() { return reply(failure) }
             // A tap that includes mouse events can still be created without keyboard permissions, with only the key events removed from its mask.
             let keyboardMask = CGEventMask(1) << CGEventType.keyDown.rawValue | CGEventMask(1) << CGEventType.keyUp.rawValue
@@ -33,20 +33,20 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                 options: .defaultTap, eventsOfInterest: keyboardMask,
                 callback: { _, _, event, _ in Unmanaged.passUnretained(event) }, userInfo: nil),
                   let probeSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, probe, 0) else {
-                return reply("Check the Input Monitoring and Accessibility permissions for TenmakuInput.")
+                return reply(LayerFailure.inputPermissionsMissing.error())
             }
             CFRunLoopAddSource(CFRunLoopGetMain(), probeSource, .commonModes)
             let enabled = CGEvent.tapIsEnabled(tap: probe)
             CFMachPortInvalidate(probe)
             CFRunLoopRemoveSource(CFRunLoopGetMain(), probeSource, .commonModes)
-            reply(enabled ? nil : "Could not start input control.")
+            reply(enabled ? nil : LayerFailure.inputControlStartFailed.error())
         }
     }
 
-    func engage(reply: @escaping @Sendable (String?) -> Void) {
+    func engage(reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
-            if filter.isEngaged { return reply(isHealthy ? nil : "Input control has stopped.") }
-            if filter.isDraining { return reply("Release the keys and mouse buttons you are holding.") }
+            if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
+            if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
             if let failure = permissionFailure() { return reply(failure) }
             let mask = Self.eventTypes.reduce(CGEventMask(0)) { $0 | CGEventMask(1) << $1.rawValue }
             guard let newTap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
@@ -55,11 +55,11 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                     let layer = Unmanaged<EventTapInputLayer>.fromOpaque(context!).takeUnretainedValue()
                     return layer.handle(type: type, event: event)
                 }, userInfo: Unmanaged.passUnretained(self).toOpaque()) else {
-                return reply("Could not start input control.")
+                return reply(LayerFailure.inputControlStartFailed.error())
             }
             guard let newSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, newTap, 0) else {
                 CFMachPortInvalidate(newTap)
-                return reply("Could not monitor input control.")
+                return reply(LayerFailure.inputControlMonitorFailed.error())
             }
             tap = newTap
             source = newSource
@@ -84,11 +84,11 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                 if generation == current { stop() }
             }
             #endif
-            reply(isHealthy ? nil : "Could not start input control.")
+            reply(isHealthy ? nil : LayerFailure.inputControlStartFailed.error())
         }
     }
 
-    func release(afterSessionLock: Bool, reply: @escaping @Sendable (String?) -> Void) {
+    func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             stop(afterSessionLock: afterSessionLock)
             guard filter.isDraining else {
@@ -101,7 +101,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                 guard generation == current, filter.isDraining else { return }
                 // Keep the display shielded if Secure Event Input prevented receiving a release and the user still cannot interact.
                 // Keep filtering here so the UI can maintain shielding and hand off to the system lock.
-                finishReleases("Could not confirm that the keys and mouse buttons were released.")
+                finishReleases(LayerFailure.inputReleaseUnconfirmed.error())
             }
         }
     }
@@ -110,9 +110,9 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         DispatchQueue.main.async { [self] in reply(filter.isEngaged && isHealthy) }
     }
 
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void) {
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
-            guard (1...30).contains(seconds) else { return reply("Set the hold duration to between 1 and 30 seconds.") }
+            guard (1...30).contains(seconds) else { return reply(LayerFailure.invalidUnlockHold.error()) }
             unlockHoldSeconds = seconds
             reply(nil)
         }
@@ -137,11 +137,11 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         return !faulted && CFMachPortIsValid(tap) && CGEvent.tapIsEnabled(tap: tap) && permissionFailure() == nil
     }
 
-    private func permissionFailure() -> String? {
+    private func permissionFailure() -> NSError? {
         guard AXIsProcessTrusted(), CGPreflightPostEventAccess() else {
-            return "Allow Accessibility for TenmakuInput."
+            return LayerFailure.inputAccessibilityDenied.error()
         }
-        guard CGPreflightListenEventAccess() else { return "Allow Input Monitoring for TenmakuInput." }
+        guard CGPreflightListenEventAccess() else { return LayerFailure.inputListenDenied.error() }
         return nil
     }
 
@@ -173,7 +173,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         if !filter.isDraining { removeTap() }
     }
 
-    private func finishReleases(_ failure: String?) {
+    private func finishReleases(_ failure: NSError?) {
         let replies = releaseReplies
         releaseReplies = []
         replies.forEach { $0(failure) }

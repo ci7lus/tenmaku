@@ -5,11 +5,11 @@ final class GammaLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var timer: DispatchSourceTimer?
     private var generation = 0
 
-    func preflight(reply: @escaping @Sendable (String?) -> Void) {
+    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
         reply(nil)
     }
 
-    func engage(reply: @escaping @Sendable (String?) -> Void) {
+    func engage(reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             blackOutAll()
             if timer == nil {
@@ -27,11 +27,11 @@ final class GammaLayer: NSObject, ShieldLayer, @unchecked Sendable {
             }
             #endif
             let displays = onlineDisplays()
-            reply(!displays.isEmpty && displays.allSatisfy(isBlack) ? nil : "Could not set all gamma values to zero.")
+            reply(!displays.isEmpty && displays.allSatisfy(isBlack) ? nil : LayerFailure.gammaFailed.error())
         }
     }
 
-    func release(afterSessionLock: Bool, reply: @escaping @Sendable (String?) -> Void) {
+    func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             stop()
             reply(nil)
@@ -46,7 +46,7 @@ final class GammaLayer: NSObject, ShieldLayer, @unchecked Sendable {
         reply(false)
     }
 
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void) {
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         reply(nil)
     }
 

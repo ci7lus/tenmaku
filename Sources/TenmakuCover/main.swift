@@ -15,11 +15,11 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func preflight(reply: @escaping @Sendable (String?) -> Void) {
+    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
         reply(nil)
     }
 
-    func engage(reply: @escaping @Sendable (String?) -> Void) {
+    func engage(reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             engaged = true
             reconcile()
@@ -30,11 +30,11 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
                 if current == generation { stop() }
             }
             #endif
-            reply(allCovered ? nil : "Could not show the cover on every display.")
+            reply(allCovered ? nil : LayerFailure.coverFailed.error())
         }
     }
 
-    func release(afterSessionLock: Bool, reply: @escaping @Sendable (String?) -> Void) {
+    func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             stop()
             reply(nil)
@@ -49,7 +49,7 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         reply(false)
     }
 
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void) {
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         reply(nil)
     }
 
@@ -103,7 +103,7 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         let window = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.backgroundColor = .black
-        // A fully opaque window hides the windows beneath it in full-screen capture.
+        // A fully opaque cover hides the windows beneath it in full-screen capture.
         window.isOpaque = false
         window.alphaValue = 0.999
         window.sharingType = .none

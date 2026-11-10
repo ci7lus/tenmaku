@@ -13,10 +13,10 @@ enum PermissionState: Equatable {
 
     var label: String {
         switch self {
-        case .granted: LegacyCopy.text("Allowed", "許可済み")
-        case .missing: LegacyCopy.text("Permission Required", "未許可")
-        case .needsApproval: LegacyCopy.text("Awaiting Approval", "承認待ち")
-        case .notRequired: LegacyCopy.text("Skipped", "スキップ")
+        case .granted: L10n.permissionGranted()
+        case .missing: L10n.permissionMissing()
+        case .needsApproval: L10n.permissionNeedsApproval()
+        case .notRequired: L10n.permissionSkipped()
         case .unavailable(let reason): reason
         }
     }
@@ -60,36 +60,38 @@ enum WalkthroughStep: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .welcome: LegacyCopy.text("Welcome to Tenmaku", "Tenmaku へようこそ")
-        case .helper: LegacyCopy.text("Install Helper (Optional)", "ヘルパーのインストール（任意）")
-        case .inputMonitoring: LegacyCopy.text("Allow Input Monitoring", "入力監視を許可する")
-        case .postEvent: LegacyCopy.text("Allow Screen Lock", "画面ロックの操作を許可する")
-        case .summary: LegacyCopy.text("Setup Status", "準備の状況")
+        case .welcome: L10n.walkthroughWelcomeTitle()
+        case .helper: L10n.walkthroughHelperTitle()
+        case .inputMonitoring: L10n.inputPermissionMonitoring()
+        case .postEvent: L10n.walkthroughLockTitle()
+        case .summary: L10n.walkthroughSummaryTitle()
         }
     }
 
     var shortTitle: String {
         switch self {
         case .welcome, .summary: ""
-        case .helper: LegacyCopy.text("Input Blocking", "入力の遮断")
-        case .inputMonitoring: LegacyCopy.text("Input Control", "入力の制御")
-        case .postEvent: LegacyCopy.text("Screen Lock", "画面ロックの操作")
+        case .helper: L10n.settingsInputBlocking()
+        case .inputMonitoring: L10n.walkthroughInputControl()
+        case .postEvent: L10n.walkthroughScreenLock()
         }
     }
 
-    func message(inputMode: InputProtectionMode) -> String {
-        switch self {
+    func message(inputMode: InputProtectionMode) -> AttributedString {
+        let text = switch self {
         case .welcome:
-            LegacyCopy.text("When you step away from your Mac, Tenmaku hides the screen and blocks the local keyboard and mouse. Codex or Claude can still capture and control the same desktop. End protection with Touch ID when you return.", "Mac から離れている間、画面を隠し、その場のキーボードとマウスからの入力を止めます。Codex や Claude はその間も同じデスクトップを撮影・操作できます。戻ったら Touch ID で保護を解除します。")
+            L10n.walkthroughWelcomeMessage()
         case .helper:
-            LegacyCopy.text("The helper can block physical keys while Secure Event Input is active. Click Next to skip installation. Without the helper, Tenmaku cannot detect physical keys or key holds during Secure Event Input. It also blocks AI actions that it cannot distinguish from physical input. You can install the helper here later.", "ヘルパーをインストールすると、Secure Event Input 中の物理キーも止められます。インストールせずに「次へ」でスキップできます。ヘルパーなしでは Secure Event Input 中の物理キーや長押しを検知できません。また、物理入力と区別できない AI の操作も遮断します。あとからここでインストールできます。")
+            L10n.walkthroughHelperMessage()
         case .inputMonitoring:
             inputMode.permissionMessage
         case .postEvent:
-            LegacyCopy.text("This lets Tenmaku lock your Mac if it can no longer maintain protection.", "保護を続けられなくなったときに、Mac の画面をロックするために使います。")
+            L10n.walkthroughLockMessage()
         case .summary:
-            LegacyCopy.text("Click Back to grant missing permissions. Start protection from the menu bar icon or General settings. To unlock, hold a key other than Esc (5 seconds by default) and touch Touch ID when you hear the sound. If Touch ID cannot unlock, hold Esc for 10 seconds to switch to the lock screen.", "足りない項目は「戻る」で設定できます。メニューバーのアイコンか設定の「一般」から保護を開始します。解除するときは、Esc 以外のキーを長押し（既定は 5 秒）して、音が鳴ったら Touch ID に触れます。Touch ID で解除できないときは、Esc を 10 秒長押しするとロック画面へ移ります。")
+            L10n.walkthroughSummaryMessage()
         }
+        return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+            ?? AttributedString(text)
     }
 
     @MainActor
@@ -103,11 +105,11 @@ enum WalkthroughStep: Int, CaseIterable {
             case .requiresApproval: .needsApproval
             // Services that have never been registered can also return .notFound.
             case .notRegistered, .notFound: .missing
-            @unknown default: .unavailable(LegacyCopy.text("Could not determine the status.", "状態を確認できません"))
+            @unknown default: .unavailable(L10n.permissionUnknown())
             }
         case .inputMonitoring:
             // Input Monitoring is granted to the helper app, so check after installation.
-            .unavailable(LegacyCopy.text("This is checked after you install the helper.", "ヘルパーをインストールしてから確認します"))
+            .unavailable(L10n.permissionHelperRequired())
         case .postEvent:
             CGPreflightPostEventAccess() ? .granted : .missing
         }
@@ -134,7 +136,7 @@ struct WalkthroughView: View {
                 if step == .summary {
                     summary
                 } else if step == .helper, permissions[.helper] == .missing {
-                    Label(LegacyCopy.text("Not Installed", "未インストール"), systemImage: "minus.circle")
+                    Label(L10n.permissionNotInstalled(), systemImage: "minus.circle")
                         .foregroundStyle(.secondary)
                 } else if let permission = permissions[step] {
                     Label(permission.label, systemImage: permission.symbol)
@@ -150,13 +152,13 @@ struct WalkthroughView: View {
                 pageIndicator
                 Spacer()
                 if step != .welcome {
-                    Button(LegacyCopy.text("Back", "戻る")) { move(by: -1) }
+                    Button(L10n.walkthroughBack()) { move(by: -1) }
                 }
                 if step == .summary {
-                    Button(LegacyCopy.text("Done", "完了"), action: finish)
+                    Button(L10n.walkthroughDone(), action: finish)
                         .keyboardShortcut(.defaultAction)
                 } else {
-                    Button(LegacyCopy.text("Next", "次へ")) { move(by: 1) }
+                    Button(L10n.walkthroughNext()) { move(by: 1) }
                         .keyboardShortcut(.defaultAction)
                 }
             }
@@ -216,14 +218,14 @@ struct WalkthroughView: View {
     private var action: some View {
         switch step {
         case .helper where permissions[.helper] == .needsApproval:
-            Button(LegacyCopy.text("Open Login Items", "ログイン項目を開く")) { SMAppService.openSystemSettingsLoginItems() }
+            Button(L10n.walkthroughOpenLoginItems()) { SMAppService.openSystemSettingsLoginItems() }
         case .helper where permissions[.helper] == .missing:
-            Button(LegacyCopy.text("Install", "インストール"), action: installHelper)
+            Button(L10n.walkthroughInstall(), action: installHelper)
         case .inputMonitoring:
-            Button(LegacyCopy.text("Request Permission", "許可を求める"), action: requestInputMonitoring)
+            Button(L10n.walkthroughRequestPermission(), action: requestInputMonitoring)
                 .disabled(permissions[.inputMonitoring] != .missing)
         case .postEvent:
-            Button(LegacyCopy.text("Request Permission", "許可を求める")) {
+            Button(L10n.walkthroughRequestPermission()) {
                 requestPostEventAccess()
                 refresh()
             }

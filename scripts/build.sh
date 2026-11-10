@@ -24,6 +24,7 @@ COVER_APP="$HELPERS/TenmakuCover.app"
 INPUT_APP="$HELPERS/TenmakuInput.app"
 
 cd "$ROOT"
+python3 scripts/generate-strings.py
 swift build -c release --arch arm64 --arch x86_64 "${SWIFT_FLAGS[@]}"
 BIN=$(swift build -c release --arch arm64 --arch x86_64 "${SWIFT_FLAGS[@]}" --show-bin-path)
 
@@ -48,6 +49,8 @@ for plist in "$APP/Contents/Info.plist" "$HELPER_APP/Contents/Info.plist" "$GAMM
   plutil -replace CFBundleShortVersionString -string "$VERSION" "$plist"
   plutil -replace CFBundleVersion -string "$BUILD_NUMBER" "$plist"
 done
+
+xcrun xcstringstool compile Bundle/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
 
 xcrun actool Bundle/Assets.xcassets assets/Tenmaku.icon \
   --compile "$APP/Contents/Resources" \

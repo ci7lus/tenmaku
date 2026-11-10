@@ -17,9 +17,9 @@ enum ProtectionState: Equatable {
     case idle
     case starting
     case shielded
-    /// The user or macOS locked the session. Keep the layers active and clear the protected state.
+    /// The user or macOS locked the session. Keep the layers active and clear the locked state.
     case interrupted
-    /// Protection cannot continue. Waiting for the session lock to take effect.
+    /// The app lock cannot continue. Waiting for the session lock to take effect.
     case handingOff(String)
     case failed(String)
 }
@@ -112,18 +112,18 @@ final class LayerClient {
         return failure
     }
 
-    private func command(_ body: (ShieldLayer, @escaping @Sendable (String?) -> Void) -> Void) async -> String? {
+    private func command(_ body: (ShieldLayer, @escaping @Sendable (NSError?) -> Void) -> Void) async -> String? {
         await withCheckedContinuation { continuation in
             let once = Once()
             let finish: @Sendable (String?) -> Void = { result in
-                if once.claim() { continuation.resume(returning: result.map(LegacyCopy.error)) }
+                if once.claim() { continuation.resume(returning: result) }
             }
-            guard let proxy = proxy(onError: { finish(LegacyCopy.text("No response: \($0.localizedDescription)", "応答がありません: \($0.localizedDescription)")) }) else {
-                finish(LegacyCopy.text("Could not connect.", "接続できませんでした"))
+            guard let proxy = proxy(onError: { finish(L10n.connectionNoResponse($0.localizedDescription)) }) else {
+                finish(L10n.connectionFailed())
                 return
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + replyTimeoutSeconds) { finish(LegacyCopy.text("No response.", "応答がありません")) }
-            body(proxy, finish)
+            DispatchQueue.main.asyncAfter(deadline: .now() + replyTimeoutSeconds) { finish(L10n.connectionTimeout()) }
+            body(proxy) { error in finish(error.map { localizedLayerError($0) }) }
         }
     }
 
@@ -195,14 +195,14 @@ final class ProtectionController: ObservableObject {
     private var unlockRequest = 0
 
     init() {
-        gamma.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("Gamma shielding was lost.", "ガンマによる遮蔽が失われました")) }
-        cover.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("The display cover was lost.", "画面の覆いが失われました")) }
+        gamma.onLost = { [weak self] in self?.reportDegraded(L10n.protectionGammaLost()) }
+        cover.onLost = { [weak self] in self?.reportDegraded(L10n.protectionCoverLost()) }
         for input in inputs.values {
-            input.onLost = { [weak self] in self?.handOffToSessionLock(LegacyCopy.text("Input blocking stopped.", "入力を遮断できなくなりました")) }
+            input.onLost = { [weak self] in self?.handOffToSessionLock(L10n.protectionInputLost()) }
         }
     }
 
-    /// Clear the protected state while preserving the remaining layers and the unlock signal.
+    /// Clear the locked state while preserving the remaining layers and the unlock signal.
     private func reportDegraded(_ reason: String) {
         guard monitor != nil else { return }
         state = .failed(reason)
@@ -296,11 +296,11 @@ final class ProtectionController: ObservableObject {
             if coverHeld != false { cover.adopt() }
             usesCover = coverHeld != false
             if inputUnknown || gammaEngaged == nil || coverEngaged == nil || gammaHeld == nil || coverHeld == nil {
-                state = .failed(LegacyCopy.text("Could not verify protection status.", "保護の状態を確認できませんでした"))
+                state = .failed(L10n.protectionStateUnknown())
             } else if currentSessionIsLocked() == true {
                 state = .interrupted
             } else if activeInputs.isEmpty || inputUnhealthy {
-                state = .failed(LegacyCopy.text("Input blocking stopped.", "入力を遮断できなくなりました"))
+                state = .failed(L10n.protectionInputLost())
             } else if let reason = degradation(gamma: gammaEngaged == true, cover: coverEngaged == true) {
                 state = .failed(reason)
             } else {
@@ -343,23 +343,23 @@ final class ProtectionController: ObservableObject {
         }
         if service.status == .requiresApproval {
             SMAppService.openSystemSettingsLoginItems()
-            return LegacyCopy.text("Allow Tenmaku in Login Items in System Settings.", "システム設定の「ログイン項目」で Tenmaku を許可してください")
+            return L10n.protectionLoginItemsRequired()
         }
-        return failure.map { LegacyCopy.text("Could not register: \($0.localizedDescription)", "登録できませんでした: \($0.localizedDescription)") }
+        return failure.map { L10n.protectionRegistrationFailed($0.localizedDescription) }
     }
 
     /// Report missing prerequisites that can be checked before changing the displays.
     private func preflightFailure(inputMode: InputProtectionMode) -> String? {
         var count: UInt32 = 0
         guard CGGetOnlineDisplayList(0, nil, &count) == .success, count > 0 else {
-            return LegacyCopy.text("Could not determine the display configuration.", "画面の構成を確認できませんでした")
+            return L10n.protectionDisplaysUnknown()
         }
         var displays = [CGDirectDisplayID](repeating: 0, count: Int(count))
         guard CGGetOnlineDisplayList(count, &displays, &count) == .success else {
-            return LegacyCopy.text("Could not determine the display configuration.", "画面の構成を確認できませんでした")
+            return L10n.protectionDisplaysUnknown()
         }
         if displays.prefix(Int(count)).contains(where: { CGDisplayIsInMirrorSet($0) != 0 }) {
-            return LegacyCopy.text("Cannot start protection while displays are mirrored.", "ミラー表示の間は保護を開始できません")
+            return L10n.protectionMirroredStart()
         }
         for service in LayerService.agents {
             if let reason = registrationFailure(.agent(plistName: service.plistName)) { return reason }
@@ -367,7 +367,7 @@ final class ProtectionController: ObservableObject {
         if let reason = registrationFailure(inputService(inputMode)) { return reason }
         guard CGPreflightPostEventAccess() else {
             requestPostEventAccess()
-            return LegacyCopy.text("Grant Screen Lock permission.", "「画面ロックの操作」を許可してください")
+            return L10n.protectionLockPermissionRequired()
         }
         return nil
     }
@@ -419,7 +419,7 @@ final class ProtectionController: ObservableObject {
         let context = LAContext()
         context.localizedFallbackTitle = ""
         authentication = context
-        context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: LegacyCopy.text("End Tenmaku protection", "Tenmaku の保護を解除します")) { [weak self] success, error in
+        context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: L10n.protectionUnlockReason()) { [weak self] success, error in
             let code = (error as? LAError)?.code
             Task { @MainActor in
                 #if TENMAKU_TEST_BUILD
@@ -451,16 +451,16 @@ final class ProtectionController: ObservableObject {
             stop()
         } else if testFlag("biometry-lockout") || code == .biometryLockout || code == .biometryNotAvailable || code == .biometryNotEnrolled {
             // Periodic Touch ID lockouts can occur. Leave the session running while the user is away.
-            reportUnlockFailure(LegacyCopy.text("Touch ID is unavailable. Hold Esc for 10 seconds to switch to the lock screen.", "Touch ID を使えません。Esc を 10 秒長押しするとロック画面へ移ります"))
+            reportUnlockFailure(L10n.protectionTouchIdUnavailable())
         } else {
-            reportUnlockFailure(LegacyCopy.text("Authentication failed.", "認証されませんでした"))
+            reportUnlockFailure(L10n.protectionAuthenticationFailed())
         }
     }
 
     private func expireUnlock(request: Int) {
         guard request == unlockRequest, authentication != nil, monitor != nil else { return }
         cancelAuthentication()
-        reportUnlockFailure(LegacyCopy.text("No response.", "応答がありませんでした"))
+        reportUnlockFailure(L10n.protectionAuthenticationTimeout())
     }
 
     private func reportUnlockFailure(_ reason: String) {
@@ -536,7 +536,7 @@ final class ProtectionController: ObservableObject {
                 // This fallback for unavailable Touch ID requires someone to hold Esc.
                 for input in activeInputs {
                     if await input.takeEscapeRequest(), locked || unlockFailure != nil {
-                        handOffToSessionLock(LegacyCopy.text("Detected an Esc hold.", "Esc の長押しを検知しました"))
+                        handOffToSessionLock(L10n.protectionEscapeHeld())
                         return
                     }
                 }
@@ -555,7 +555,7 @@ final class ProtectionController: ObservableObject {
                     }
                 }
                 if inputStates.isEmpty || inputStates.contains(where: { $0 != true }) {
-                    handOffToSessionLock(LegacyCopy.text("Input blocking stopped.", "入力を遮断できなくなりました"))
+                    handOffToSessionLock(L10n.protectionInputLost())
                     return
                 }
                 if locked {
@@ -573,9 +573,9 @@ final class ProtectionController: ObservableObject {
     }
 
     private func degradation(gamma: Bool, cover: Bool) -> String? {
-        if isMirrored { return LegacyCopy.text("Mirrored displays are unsupported.", "ミラー表示には対応していません") }
-        if !gamma { return LegacyCopy.text("Gamma shielding was lost.", "ガンマによる遮蔽が失われました") }
-        if usesCover && !cover { return LegacyCopy.text("The display cover was lost.", "画面の覆いが失われました") }
+        if isMirrored { return L10n.protectionMirrored() }
+        if !gamma { return L10n.protectionGammaLost() }
+        if usesCover && !cover { return L10n.protectionCoverLost() }
         return nil
     }
 

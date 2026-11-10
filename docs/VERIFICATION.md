@@ -42,59 +42,59 @@ The results suggest that WindowServer restores the original color settings on al
 
 With all gamma values set to zero, ScreenCaptureKit, `screencapture`, Claude, and Codex captured the same content as before the display was obscured.
 
-## Covers that stay out of screen capture
+## Overlays that stay out of screen capture
 
 ### Physical displays and capture
 
 We displayed a full-screen window with `NSWindow.sharingType = .none` and compared the physical display with each capture path.
 
-| Check | Opaque cover (100%) | Cover at 99.9% opacity |
+| Check | Opaque overlay (100%) | Overlay at 99.9% opacity |
 | --- | --- | --- |
-| Physical display | The cover was visible | The cover was visible. The user could not see through it |
-| `screencapture` (whole display) | The result showed **only the wallpaper**. The cover, windows, menu bar, and Dock were absent | The cover was absent. The difference from an image taken without the cover was 0.1 |
-| Claude Computer Use (whole display) | The result showed only the wallpaper | The result omitted the cover and showed the windows behind it, the menu bar, and the Dock |
-| Codex (per-window capture) | Capturing the cover window returned a white image. Codex could capture the windows behind it | Codex could capture the windows behind it |
+| Physical display | The overlay was visible | The overlay was visible. The user could not see through it |
+| `screencapture` (whole display) | The result showed **only the wallpaper**. The overlay, windows, menu bar, and Dock were absent | The overlay was absent. The difference from an image taken without the overlay was 0.1 |
+| Claude Computer Use (whole display) | The result showed only the wallpaper | The result omitted the overlay and showed the windows behind it, the menu bar, and the Dock |
+| Codex (per-window capture) | Capturing the overlay window returned a white image. Codex could capture the windows behind it | Codex could capture the windows behind it |
 
-- We captured 7 images between 0.3 and 25 seconds after showing the opaque cover. All 7 contained only the wallpaper in the area of the window. This suggests that compositing excludes windows fully hidden behind an opaque window.
-- With a 99.9% cover, only 0.1% of the content behind it passes through. The calculated contribution even from a white pixel is below one step at 8-bit color depth.
-- The mouse pointer appeared above the cover.
+- We captured 7 images between 0.3 and 25 seconds after showing the opaque overlay. All 7 contained only the wallpaper in the area of the window. This suggests that compositing excludes windows fully hidden behind an opaque window.
+- With a 99.9% overlay, only 0.1% of the content behind it passes through. The calculated contribution even from a white pixel is below one step at 8-bit color depth.
+- The mouse pointer appeared above the overlay.
 
-### Interaction through the cover
+### Interaction through the overlay
 
-We placed a test window behind a 99.9% cover with `ignoresMouseEvents = true`.
+We placed a test window behind a 99.9% overlay with `ignoresMouseEvents = true`.
 
 - Claude delivered 6 key events and a click, entered text in the field, and activated the button. On several occasions, the first click reached the window as a mouse-down event without activating the button. The cause is unknown.
 - Codex changed the field value and activated the button without delivering key or mouse events to the window. This suggests Codex used accessibility actions. In another test, Codex key events reached the window.
-- A cover with `ignoresMouseEvents` also lets physical clicks through. The design relies on the helper to block physical input.
+- An overlay with `ignoresMouseEvents` also lets physical clicks through. The design relies on the helper to block physical input.
 
 ### Conditions that remove this layer
 
-With only the cover in use, force-quitting its owning process exposed the content. The content was still visible when we reapplied gamma immediately after detecting the exit.
+With only the overlay in use, force-quitting its owning process exposed the content. The content was still visible when we reapplied gamma immediately after detecting the exit.
 
-## Combining gamma and a cover
+## Combining gamma and an overlay
 
-We put gamma and the cover in separate processes, displayed a full-screen red test window on the built-in display, and triggered faults. A separate coordinator read gamma without writing it. Every 20 ms, it logged gamma and whether the cover was present.
+We put gamma and the overlay in separate processes, displayed a full-screen red test window on the built-in display, and triggered faults. A separate coordinator read gamma without writing it. Every 20 ms, it logged gamma and whether the overlay was present.
 
-| Fault | Gamma | Cover | Red in video | Visual observation |
+| Fault | Gamma | Overlay | Red in video | Visual observation |
 | --- | --- | --- | --- | --- |
 | Another process writes gamma and exits normally | Restored. The owning process reapplied gamma about 9 ms later | Present | None | None |
 | The gamma process is force-quit | Stayed at the original values for about 4 seconds | Present | None | None |
-| The cover process is force-quit | Stayed all zero | Disappeared | None | None |
+| The overlay process is force-quit | Stayed all zero | Disappeared | None | None |
 
 Red in the video peaked at 18, below the detection threshold of 20. Full-screen red registers at about 180.
 
 ### Disconnecting and reconnecting the external display
 
-The gamma process kept all gamma values at zero on every display. The cover process showed a cover as soon as a display appeared. We displayed a red test window on both displays, disconnected the external display cable, and reconnected it about 12 seconds later.
+The gamma process kept all gamma values at zero on every display. The overlay process showed an overlay as soon as a display appeared. We displayed a red test window on both displays, disconnected the external display cable, and reconnected it about 12 seconds later.
 
 | Time | Observation |
 | --- | --- |
-| After disconnecting | The built-in display's gamma returned to its original values about 5.2 seconds after the removal notification. The gamma process reapplied the table about 0.06 seconds later. The cover stayed in place throughout |
-| Immediately after reconnecting | The cover appeared on the external display about 0.25 seconds after the reconfiguration start notification and about 0.13 seconds after the addition notification |
-| After reconnecting | Gamma returned to its original values on both displays about 5.2 seconds after the addition notification. The gamma process reapplied the tables about 0.05–0.07 seconds later. Both displays had covers |
+| After disconnecting | The built-in display's gamma returned to its original values about 5.2 seconds after the removal notification. The gamma process reapplied the table about 0.06 seconds later. The overlay stayed in place throughout |
+| Immediately after reconnecting | The overlay appeared on the external display about 0.25 seconds after the reconfiguration start notification and about 0.13 seconds after the addition notification |
+| After reconnecting | Gamma returned to its original values on both displays about 5.2 seconds after the addition notification. The gamma process reapplied the tables about 0.05–0.07 seconds later. Both displays had overlays |
 
 - Red in the video peaked at 13.2 on the external display and 5.4 on the built-in display, below the threshold of 20. The user also reported that the displays stayed black.
-- We did not record the external display's gamma for about 0.13 seconds after reconnecting, before the cover appeared. The lack of visible content in this interval could be because the gamma kept its previous values or because the cover appeared before the monitor began showing an image.
+- We did not record the external display's gamma for about 0.13 seconds after reconnecting, before the overlay appeared. The lack of visible content in this interval could be because the gamma kept its previous values or because the overlay appeared before the monitor began showing an image.
 - In another setup, gamma returned to its original values about 0.035 seconds after removal. The reason for the difference is unknown.
 - The gamma process did not receive reconfiguration notifications when it ran without `NSApplication`. The product needs to receive these notifications.
 
@@ -159,11 +159,11 @@ Blocking physical input at the device distinguished it from AI input without rel
 
 With the trackpad and USB mouse also seized, the helper counted 11–13 physical clicks and recorded pointer movement. The window received 0 physical clicks.
 
-## Capture and interaction while protection is active
+## Capture and interaction while locked
 
 ### Video capture
 
-We obscured the built-in display with gamma and a cover and opened a window whose color and number changed every second.
+We obscured the built-in display with gamma and an overlay and opened a window whose color and number changed every second.
 
 - The Codex preview continued updating by visual observation. Codex read 41 and 74 about 30 seconds apart, consistent with a display that increments by 1 per second.
 - A separate ScreenCaptureKit stream received 294 frames in about 88 seconds and captured 89 color changes. In a different trial, frames stopped after about 21 seconds without an error notification. The cause is unknown.
@@ -171,20 +171,20 @@ We obscured the built-in display with gamma and a cover and opened a window whos
 
 ### Interaction with all layers in place
 
-We used gamma, a cover, and exclusive access to the keyboard and pointing devices at the same time. Claude entered text and activated the button (7 key events and 5 mouse events). The button activated at a time consistent with the Codex action. The window received 0 physical input events during the same interval.
+We used gamma, an overlay, and exclusive access to the keyboard and pointing devices at the same time. Claude entered text and activated the button (7 key events and 5 mouse events). The button activated at a time consistent with the Codex action. The window received 0 physical input events during the same interval.
 
 ### Requirements for client testing
 
 - Bundle the test window as an app. Neither Codex nor Claude Computer Use could target a window from an unbundled executable.
-- Codex pauses for permission the first time it interacts with a window. Grant permission before enabling protection.
+- Codex pauses for permission the first time it interacts with a window. Grant permission before locking.
 
 ## Unlocking
 
-With gamma, a cover, and exclusive access to the keyboard and pointing devices active, a physical Space event received by the helper triggered `LAContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics)`. We did not offer a password fallback.
+With gamma, an overlay, and exclusive access to the keyboard and pointing devices active, a physical Space event received by the helper triggered `LAContext.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics)`. We did not offer a password fallback.
 
-- Touch ID authentication succeeded in 1.88 seconds. We released the devices, removed the cover, and restored gamma in that order. Both displays then had their original gamma values.
+- Touch ID authentication succeeded in 1.88 seconds. We released the devices, removed the overlay, and restored gamma in that order. Both displays then had their original gamma values.
 - The helper counted the key-down and key-up events for the Space press that triggered authentication. Neither event reached the window.
-- Touch ID succeeded. The cover appeared to hide the authentication window.
+- Touch ID succeeded. The overlay appeared to hide the authentication window.
 - Touch ID authentication also succeeded when only the keyboard was seized (1.76 seconds). It took 1.78 seconds without seizure.
 
 ## macOS session lock
@@ -204,7 +204,7 @@ We tested how to request and verify a macOS session lock for a possible handoff 
   Times are relative to when the key changed on lock. The time of unlock depends on when the user unlocks the session.
 
   All the functions used were public APIs. The key and notification names are undocumented. The headers list dictionary keys such as `kCGSessionOnConsoleKey` and `kCGSessionLoginDoneKey` and omit a key for lock state.
-- We recorded the built-in display with the iPhone's slow-motion mode to check whether content appeared when we removed obscuration after confirming the lock. The content was a full-screen red window hidden by gamma and a cover. We requested the lock by sending Control-Command-Q with `CGEventPost`. The test obscured the built-in display only.
+- We recorded the built-in display with the iPhone's slow-motion mode to check whether content appeared when we removed obscuration after confirming the lock. The content was a full-screen red window hidden by gamma and an overlay. We requested the lock by sending Control-Command-Q with `CGEventPost`. The test obscured the built-in display only.
 
 | Trial | When obscuration was removed | Built-in display |
 | --- | --- | --- |

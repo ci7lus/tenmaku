@@ -7,8 +7,8 @@ enum SettingsTab: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .walkthrough: LegacyCopy.text("Getting Started", "はじめに")
-        case .general: LegacyCopy.text("General", "一般")
+        case .walkthrough: L10n.settingsWalkthrough()
+        case .general: L10n.settingsGeneral()
         }
     }
 

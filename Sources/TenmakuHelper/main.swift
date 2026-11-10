@@ -48,13 +48,13 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         IOHIDManagerScheduleWithRunLoop(manager, CFRunLoopGetMain(), CFRunLoopMode.defaultMode.rawValue)
     }
 
-    func preflight(reply: @escaping @Sendable (String?) -> Void) {
+    func preflight(reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             guard !engaged else { return reply(nil) }
-            guard let device = physicalDevices().first else { return reply("No input devices were found.") }
+            guard let device = physicalDevices().first else { return reply(LayerFailure.inputDevicesMissing.error()) }
             let result = IOHIDDeviceOpen(device, seizeOption)
             guard result == kIOReturnSuccess else {
-                reply("Check the Input Monitoring permission (\(String(format: "0x%08x", result))).")
+                reply(LayerFailure.inputMonitoringDenied.error(status: result))
                 // The running daemon does not pick up permission changes. Restart it on the next connection.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { exit(0) }
                 return
@@ -64,10 +64,10 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func engage(reply: @escaping @Sendable (String?) -> Void) {
+    func engage(reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             let devices = physicalDevices()
-            guard !devices.isEmpty else { return reply("No input devices were found.") }
+            guard !devices.isEmpty else { return reply(LayerFailure.inputDevicesMissing.error()) }
             engaged = true
             complete = true
             draining = false
@@ -75,7 +75,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
             escapeRequested = false
             for device in devices where !seize(device) {
                 stop()
-                return reply("Could not seize the input devices.")
+                return reply(LayerFailure.inputDeviceSeizeFailed.error())
             }
             preventIdleSleep()
             generation += 1
@@ -90,7 +90,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func release(afterSessionLock: Bool, reply: @escaping @Sendable (String?) -> Void) {
+    func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             stop()
             reply(nil)
@@ -101,7 +101,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         !engaged && seized.isEmpty
     }
 
-    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void) {
+    func setUnlockHold(seconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             unlockHoldSeconds = seconds
             reply(nil)

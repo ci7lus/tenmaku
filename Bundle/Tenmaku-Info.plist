@@ -6,8 +6,8 @@
 	<string>en</string>
 	<key>CFBundleLocalizations</key>
 	<array>
-		<string>en</string>
 		<string>ja</string>
+		<string>en</string>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>Tenmaku</string>

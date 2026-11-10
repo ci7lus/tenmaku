@@ -23,11 +23,11 @@ final class StatusMenu: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let openSettings: () -> Void
     private let protection: ProtectionController
-    private let stateItem = NSMenuItem(title: LegacyCopy.text("Protection Off", "未保護"), action: nil, keyEquivalent: "")
-    private let startItem = NSMenuItem(title: LegacyCopy.text("Start Protection", "保護を開始"), action: nil, keyEquivalent: "")
-    private let unlockItem = NSMenuItem(title: LegacyCopy.text("End Protection…", "保護を解除…"), action: nil, keyEquivalent: "")
+    private let stateItem = NSMenuItem(title: L10n.menuIdle(), action: nil, keyEquivalent: "")
+    private let startItem = NSMenuItem(title: L10n.protectionStart(), action: nil, keyEquivalent: "")
+    private let unlockItem = NSMenuItem(title: L10n.protectionUnlock(), action: nil, keyEquivalent: "")
     #if TENMAKU_TEST_BUILD
-    private let stopItem = NSMenuItem(title: LegacyCopy.text("Stop Shielding (Test)", "遮蔽を終了（試験用）"), action: nil, keyEquivalent: "")
+    private let stopItem = NSMenuItem(title: L10n.menuTestStop(), action: nil, keyEquivalent: "")
     #endif
 
     private var doorDrop: Timer?
@@ -68,7 +68,7 @@ final class StatusMenu: NSObject {
         unlockItem.isEnabled = false
         menu.addItem(unlockItem)
         #if TENMAKU_TEST_BUILD
-        startItem.title = LegacyCopy.text("Start Shielding (Test)", "遮蔽を開始（試験用）")
+        startItem.title = L10n.menuTestStart()
         stopItem.target = self
         stopItem.action = #selector(stopProtection)
         stopItem.isEnabled = false
@@ -77,11 +77,11 @@ final class StatusMenu: NSObject {
         #endif
         menu.addItem(.separator())
 
-        let settings = NSMenuItem(title: LegacyCopy.text("Settings…", "設定…"), action: #selector(showSettings), keyEquivalent: ",")
+        let settings = NSMenuItem(title: L10n.menuSettings(), action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
 
-        let quit = NSMenuItem(title: LegacyCopy.text("Quit Tenmaku", "Tenmaku を終了"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let quit = NSMenuItem(title: L10n.menuQuit(), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
 
         item.menu = menu
@@ -91,13 +91,13 @@ final class StatusMenu: NSObject {
 
     private func apply(_ state: ProtectionState) {
         switch state {
-        case .idle: stateItem.title = LegacyCopy.text("Protection Off", "未保護")
-        case .starting: stateItem.title = LegacyCopy.text("Starting Protection…", "保護を開始しています…")
+        case .idle: stateItem.title = L10n.menuIdle()
+        case .starting: stateItem.title = L10n.menuStarting()
         case .shielded:
-            stateItem.title = protection.unlockFailure.map { LegacyCopy.text("Could not unlock: \($0)", "解除できませんでした: \($0)") } ?? LegacyCopy.text("Protection On", "保護中")
-        case .interrupted: stateItem.title = LegacyCopy.text("Paused (macOS Screen Locked)", "中断中（macOS の画面がロックされています）")
-        case .handingOff(let reason): stateItem.title = LegacyCopy.text("Switching to the macOS Lock Screen: \(reason)", "macOS の画面ロックに切り替えています: \(reason)")
-        case .failed(let reason): stateItem.title = LegacyCopy.text("Failed: \(reason)", "失敗: \(reason)")
+            stateItem.title = protection.unlockFailure.map { L10n.menuUnlockFailed($0) } ?? L10n.menuShielded()
+        case .interrupted: stateItem.title = L10n.menuInterrupted()
+        case .handingOff(let reason): stateItem.title = L10n.menuHandingOff(reason)
+        case .failed(let reason): stateItem.title = L10n.menuFailed(reason)
         }
         indicator = state == .idle ? .unlocked : .locked
         startItem.isEnabled = state == .idle
