@@ -12,8 +12,8 @@ enum ProtectionIndicator {
     }
 }
 
-private let doorDropDuration = Duration.milliseconds(400)
-private let doorDropFrameInterval = 1.0 / 60
+private let doorAnimationDuration = Duration.milliseconds(400)
+private let doorAnimationFrameInterval = 1.0 / 60
 private let statusIconViewBoxSide = 800.0
 // The area between the walls below the roof, in viewBox units with the origin at the lower-left corner.
 private let doorOpening = NSRect(x: 287, y: 112, width: 226, height: 359)
@@ -30,16 +30,19 @@ final class StatusMenu: NSObject {
     private let stopItem = NSMenuItem(title: L10n.menuTestStop(), action: nil, keyEquivalent: "")
     #endif
 
-    private var doorDrop: Timer?
-    private var doorDropStart = ContinuousClock.now
-    private var doorDropCompletion: CheckedContinuation<Void, Never>?
+    private var doorAnimation: Timer?
+    private var doorAnimationStart = ContinuousClock.now
+    private var doorProgress = 0.0
+    private var doorAnimationFrom = 0.0
+    private var doorAnimationTo = 0.0
+    private var doorCloseCompletion: CheckedContinuation<Void, Never>?
 
     var indicator: ProtectionIndicator = .unlocked {
         didSet {
-            // Keep the door moving if the state changes during startup.
+            // Repeated updates for the same state leave the door animation running.
             guard indicator != oldValue else { return }
-            if indicator == .locked, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-                startDoorDrop()
+            if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                startDoorAnimation()
             } else {
                 applyIndicator()
             }
@@ -86,7 +89,7 @@ final class StatusMenu: NSObject {
 
         item.menu = menu
         protection.onChange = { [weak self] state in self?.apply(state) }
-        protection.onBeforeEngage = { [weak self] in await self?.waitForDoorDrop() }
+        protection.onBeforeEngage = { [weak self] in await self?.waitForDoorClose() }
     }
 
     private func apply(_ state: ProtectionState) {
@@ -99,7 +102,10 @@ final class StatusMenu: NSObject {
         case .handingOff(let reason): stateItem.title = L10n.menuHandingOff(reason)
         case .failed(let reason): stateItem.title = L10n.menuFailed(reason)
         }
-        indicator = state == .idle ? .unlocked : .locked
+        switch state {
+        case .idle, .failed: indicator = .unlocked
+        case .starting, .shielded, .interrupted, .handingOff: indicator = .locked
+        }
         startItem.isEnabled = state == .idle
         unlockItem.isEnabled = protection.canRequestUnlock
         if case .failed = state { startItem.isEnabled = true }
@@ -141,11 +147,12 @@ final class StatusMenu: NSObject {
     #endif
 
     private func applyIndicator() {
-        doorDrop?.invalidate()
-        doorDrop = nil
+        doorAnimation?.invalidate()
+        doorAnimation = nil
+        doorProgress = indicator == .locked ? 1 : 0
         show(NSImage(named: indicator.imageName))
-        doorDropCompletion?.resume()
-        doorDropCompletion = nil
+        doorCloseCompletion?.resume()
+        doorCloseCompletion = nil
     }
 
     private func show(_ image: NSImage?) {
@@ -154,32 +161,40 @@ final class StatusMenu: NSObject {
         item.button?.image = image
     }
 
-    private func startDoorDrop() {
-        doorDrop?.invalidate()
-        doorDropStart = .now
-        show(doorDropImage(progress: 0))
+    private func startDoorAnimation() {
+        doorAnimation?.invalidate()
+        doorAnimationFrom = doorProgress
+        doorAnimationTo = indicator == .locked ? 1 : 0
+        guard doorAnimationFrom != doorAnimationTo else {
+            applyIndicator()
+            return
+        }
+        doorAnimationStart = .now
+        show(doorImage(progress: doorProgress))
         // Use the common run loop modes so the animation continues during menu tracking.
-        let timer = Timer(timeInterval: doorDropFrameInterval, target: self, selector: #selector(advanceDoorDrop), userInfo: nil, repeats: true)
+        let timer = Timer(timeInterval: doorAnimationFrameInterval, target: self, selector: #selector(advanceDoorAnimation), userInfo: nil, repeats: true)
         RunLoop.main.add(timer, forMode: .common)
-        doorDrop = timer
+        doorAnimation = timer
     }
 
-    private func waitForDoorDrop() async {
-        guard doorDrop != nil else { return }
-        await withCheckedContinuation { doorDropCompletion = $0 }
+    private func waitForDoorClose() async {
+        guard indicator == .locked, doorAnimation != nil else { return }
+        await withCheckedContinuation { doorCloseCompletion = $0 }
     }
 
-    @objc private func advanceDoorDrop() {
-        let elapsed = (ContinuousClock.now - doorDropStart) / doorDropDuration
+    @objc private func advanceDoorAnimation() {
+        let elapsed = (ContinuousClock.now - doorAnimationStart) / doorAnimationDuration
         guard elapsed < 1 else {
             applyIndicator()
             return
         }
-        // Accelerate the door to make it look like it is falling.
-        show(doorDropImage(progress: elapsed * elapsed))
+        // Accelerate when closing and decelerate when opening. Resume from the current position on reversal.
+        let eased = doorAnimationTo > doorAnimationFrom ? elapsed * elapsed : 1 - (1 - elapsed) * (1 - elapsed)
+        doorProgress = doorAnimationFrom + (doorAnimationTo - doorAnimationFrom) * eased
+        show(doorImage(progress: doorProgress))
     }
 
-    private func doorDropImage(progress: Double) -> NSImage? {
+    private func doorImage(progress: Double) -> NSImage? {
         guard let open = NSImage(named: ProtectionIndicator.unlocked.imageName),
               let closed = NSImage(named: ProtectionIndicator.locked.imageName) else { return nil }
         return NSImage(size: open.size, flipped: false) { rect in
