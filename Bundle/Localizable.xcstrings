@@ -1,6 +1,24 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "common.cancel": {
+      "comment": "Button that cancels the operation.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンセル"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
     "connection.failed": {
       "comment": "The XPC connection failed.",
       "extractionState": "manual",
@@ -1287,6 +1305,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "Display Color Adjustment"
+          }
+        }
+      }
+    },
+    "unlock_guide.hide_next_time": {
+      "comment": "Checkbox to skip the guide for future locks.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次から案内を表示しない"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Don’t Show This Guide Again"
+          }
+        }
+      }
+    },
+    "unlock_guide.message": {
+      "comment": "The argument is the hold duration for this lock in seconds. The alternative Esc procedure takes 10 seconds.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックを解除するには、Esc以外のキーを%lld秒間押し続け、音が鳴ったらTouch IDに触れてください。\n\nTouch IDで解除できないときは、Escを10秒間押し続けるとmacOSのロック画面へ移ります。"
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "To unlock, hold any key except Esc for %lld second. When you hear the sound, touch the Touch ID sensor.\n\nIf you cannot unlock with Touch ID, hold Esc for 10 seconds to switch to the macOS lock screen."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "To unlock, hold any key except Esc for %lld seconds. When you hear the sound, touch the Touch ID sensor.\n\nIf you cannot unlock with Touch ID, hold Esc for 10 seconds to switch to the macOS lock screen."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "unlock_guide.title": {
+      "comment": "Title of the guide shown before the displays are shielded.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックの解除方法"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to Unlock"
           }
         }
       }

@@ -189,6 +189,7 @@ final class ProtectionController: ObservableObject {
     private var monitor: Task<Void, Never>?
     private var restoring = false
     private var stopping = false
+    private var showingUnlockGuide = false
     private var usesCover = true
     private var authentication: LAContext?
     // Give each request a unique number so stale or canceled attempts cannot unlock.
@@ -372,15 +373,34 @@ final class ProtectionController: ObservableObject {
         return nil
     }
 
+    private var canStart: Bool {
+        !restoring && !stopping && !showingUnlockGuide && monitor == nil && (state == .idle || isFailed)
+    }
+
     func start() {
-        guard !restoring, !stopping, monitor == nil, state == .idle || isFailed else { return }
+        guard canStart else { return }
+        showingUnlockGuide = true
+        // Let the menu or SwiftUI action return before opening the modal.
+        DispatchQueue.main.async { [self] in
+            showingUnlockGuide = false
+            confirmAndStart()
+        }
+    }
+
+    private func confirmAndStart() {
+        guard canStart else { return }
+        let unlockHoldSeconds = UserDefaults.standard.object(forKey: DefaultsKey.unlockHoldSeconds) as? Int ?? defaultUnlockHoldSeconds
+        showingUnlockGuide = true
+        let confirmed = UnlockGuide.confirmIfNeeded(seconds: unlockHoldSeconds)
+        showingUnlockGuide = false
+        // State can change asynchronously while the modal is open, for example during restoration.
+        guard confirmed, canStart else { return }
         let mode = InputProtectionMode.selected
         if let reason = preflightFailure(inputMode: mode) {
             state = .failed(reason)
             return
         }
         usesCover = UserDefaults.standard.string(forKey: DefaultsKey.shieldMode) != ShieldMode.gammaOnly.rawValue
-        let unlockHoldSeconds = UserDefaults.standard.object(forKey: DefaultsKey.unlockHoldSeconds) as? Int ?? defaultUnlockHoldSeconds
         unlockFailure = nil
         let input = inputs[mode]!
         activeInputs = [input]

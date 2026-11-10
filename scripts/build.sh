@@ -7,8 +7,8 @@ set -euo pipefail
 
 ROOT=${0:A:h:h}
 : "${SIGN_IDENTITY:?Set SIGN_IDENTITY to your Developer ID Application signing identity}"
-VERSION=${VERSION:-0.0.0}
-BUILD_NUMBER=${BUILD_NUMBER:-0}
+VERSION=${VERSION:-0.1.0}
+BUILD_NUMBER=${BUILD_NUMBER:-1}
 
 if [[ -n "${TENMAKU_TEST_BUILD:-}" ]]; then
   APP="$ROOT/build/test/Tenmaku.app"

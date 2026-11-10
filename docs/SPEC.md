@@ -48,6 +48,8 @@ While locked, prevent the displays and the Mac from sleeping due to inactivity s
 
 ## Start, Unlock, and Failure Handling
 
+Before locking, a pop-up shows the current hold duration, how to unlock with Touch ID, and the alternative of holding Esc for 10 seconds. The menu and General settings use the same guide. The app waits for **Lock** before checking prerequisites or making any changes to the displays or input. Canceling leaves the app unlocked. The **Don’t Show This Guide Again** choice is saved even when the user cancels and persists across app restarts. When selected, the app skips the guide for future locks. Restoring an active lock also skips the guide.
+
 Before changing the displays or input, check for any missing permissions and unsupported conditions that can be detected in advance. The user may leave after the app reports the locked state. If start is canceled before either protection changes, keep the app unlocked and report why. If start fails partway through, track the changes already applied and withhold the locked status. Require unlock authentication before showing a hidden desktop or restoring input that was blocked. Apply the same rule when the app cannot tell which changes took effect.
 
 The authentication result must belong to the app lock and target session in effect when the request was made. A success received after cancellation or for an earlier request cannot unlock the app. Apply this rule even if the UI restarts.

@@ -2,6 +2,10 @@
 import Foundation
 
 enum L10n {
+    static func commonCancel(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "common.cancel", defaultValue: "Cancel", bundle: bundle, locale: locale)
+    }
+
     static func connectionFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "connection.failed", defaultValue: "Could not connect.", bundle: bundle, locale: locale)
     }
@@ -284,6 +288,18 @@ enum L10n {
 
     static func shieldGammaOnly(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "shield.gamma_only", defaultValue: "Display Color Adjustment", bundle: bundle, locale: locale)
+    }
+
+    static func unlockGuideHideNextTime(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "unlock_guide.hide_next_time", defaultValue: "Don’t Show This Guide Again", bundle: bundle, locale: locale)
+    }
+
+    static func unlockGuideMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "unlock_guide.message", defaultValue: "To unlock, hold any key except Esc for \(arg1) seconds. When you hear the sound, touch the Touch ID sensor.\n\nIf you cannot unlock with Touch ID, hold Esc for 10 seconds to switch to the macOS lock screen.", bundle: bundle, locale: locale)
+    }
+
+    static func unlockGuideTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "unlock_guide.title", defaultValue: "How to Unlock", bundle: bundle, locale: locale)
     }
 
     static func walkthroughBack(bundle: Bundle = .main, locale: Locale = .current) -> String {
