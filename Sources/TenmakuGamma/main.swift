@@ -27,7 +27,7 @@ final class GammaLayer: NSObject, ShieldLayer, @unchecked Sendable {
             }
             #endif
             let displays = onlineDisplays()
-            reply(!displays.isEmpty && displays.allSatisfy(isBlack) ? nil : "Could not set gamma to zero on all displays.")
+            reply(!displays.isEmpty && displays.allSatisfy(isBlack) ? nil : "Could not set all gamma values to zero.")
         }
     }
 

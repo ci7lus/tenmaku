@@ -80,15 +80,15 @@ enum WalkthroughStep: Int, CaseIterable {
     func message(inputMode: InputProtectionMode) -> String {
         switch self {
         case .welcome:
-            LegacyCopy.text("When you step away from your Mac, Tenmaku hides the screen and blocks the local keyboard and mouse. Codex or Claude can still capture and control the same desktop. Use Touch ID to end protection when you return.", "Mac から離れている間、画面を隠して、その場のキーボードとマウスを止めます。Codex や Claude は、その間も同じデスクトップを撮影・操作できます。戻ったら Touch ID で解除します。")
+            LegacyCopy.text("When you step away from your Mac, Tenmaku hides the screen and blocks the local keyboard and mouse. Codex or Claude can still capture and control the same desktop. End protection with Touch ID when you return.", "Mac から離れている間、画面を隠し、その場のキーボードとマウスからの入力を止めます。Codex や Claude はその間も同じデスクトップを撮影・操作できます。戻ったら Touch ID で保護を解除します。")
         case .helper:
-            LegacyCopy.text("The helper can block physical keys while Secure Event Input is active. Click Next to skip installation. Without the helper, Tenmaku cannot detect physical keys or key holds during Secure Event Input and blocks AI actions that it cannot distinguish from physical input. You can install it here later.", "ヘルパーをインストールすると、Secure Event Input 中の物理キーも止められます。インストールせずに「次へ」でスキップすることもできます。その場合、Secure Event Input 中の物理キーや長押しを検知できず、物理入力と区別できない AI の操作も遮断します。あとからここでインストールできます。")
+            LegacyCopy.text("The helper can block physical keys while Secure Event Input is active. Click Next to skip installation. Without the helper, Tenmaku cannot detect physical keys or key holds during Secure Event Input. It also blocks AI actions that it cannot distinguish from physical input. You can install the helper here later.", "ヘルパーをインストールすると、Secure Event Input 中の物理キーも止められます。インストールせずに「次へ」でスキップできます。ヘルパーなしでは Secure Event Input 中の物理キーや長押しを検知できません。また、物理入力と区別できない AI の操作も遮断します。あとからここでインストールできます。")
         case .inputMonitoring:
             inputMode.permissionMessage
         case .postEvent:
             LegacyCopy.text("This lets Tenmaku lock your Mac if it can no longer maintain protection.", "保護を続けられなくなったときに、Mac の画面をロックするために使います。")
         case .summary:
-            LegacyCopy.text("Go back to grant missing permissions. Start protection from the menu bar icon or General settings. To unlock, hold a key other than Esc (5 seconds by default) and touch Touch ID when you hear the sound. If Touch ID cannot unlock, hold Esc for 10 seconds to switch to the lock screen.", "足りない項目は、戻って設定できます。保護はメニューバーのアイコンか、設定の「一般」から開始します。解除は、Esc 以外のキーを長押し（既定は 5 秒）して、音が鳴ったら Touch ID に触れます。Touch ID で解除できないときは、Esc を 10 秒長押しするとロック画面へ移ります。")
+            LegacyCopy.text("Click Back to grant missing permissions. Start protection from the menu bar icon or General settings. To unlock, hold a key other than Esc (5 seconds by default) and touch Touch ID when you hear the sound. If Touch ID cannot unlock, hold Esc for 10 seconds to switch to the lock screen.", "足りない項目は「戻る」で設定できます。メニューバーのアイコンか設定の「一般」から保護を開始します。解除するときは、Esc 以外のキーを長押し（既定は 5 秒）して、音が鳴ったら Touch ID に触れます。Touch ID で解除できないときは、Esc を 10 秒長押しするとロック画面へ移ります。")
         }
     }
 
@@ -107,7 +107,7 @@ enum WalkthroughStep: Int, CaseIterable {
             }
         case .inputMonitoring:
             // Input Monitoring is granted to the helper app, so check after installation.
-            .unavailable(LegacyCopy.text("This is checked after you install the helper.", "ヘルパーの導入後に確認します"))
+            .unavailable(LegacyCopy.text("This is checked after you install the helper.", "ヘルパーをインストールしてから確認します"))
         case .postEvent:
             CGPreflightPostEventAccess() ? .granted : .missing
         }

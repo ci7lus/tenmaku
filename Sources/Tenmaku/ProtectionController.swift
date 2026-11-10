@@ -195,10 +195,10 @@ final class ProtectionController: ObservableObject {
     private var unlockRequest = 0
 
     init() {
-        gamma.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました")) }
-        cover.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("The display cover was lost.", "覆いが失われました")) }
+        gamma.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("Gamma shielding was lost.", "ガンマによる遮蔽が失われました")) }
+        cover.onLost = { [weak self] in self?.reportDegraded(LegacyCopy.text("The display cover was lost.", "画面の覆いが失われました")) }
         for input in inputs.values {
-            input.onLost = { [weak self] in self?.handOffToSessionLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました")) }
+            input.onLost = { [weak self] in self?.handOffToSessionLock(LegacyCopy.text("Input blocking stopped.", "入力を遮断できなくなりました")) }
         }
     }
 
@@ -300,7 +300,7 @@ final class ProtectionController: ObservableObject {
             } else if currentSessionIsLocked() == true {
                 state = .interrupted
             } else if activeInputs.isEmpty || inputUnhealthy {
-                state = .failed(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"))
+                state = .failed(LegacyCopy.text("Input blocking stopped.", "入力を遮断できなくなりました"))
             } else if let reason = degradation(gamma: gammaEngaged == true, cover: coverEngaged == true) {
                 state = .failed(reason)
             } else {
@@ -359,7 +359,7 @@ final class ProtectionController: ObservableObject {
             return LegacyCopy.text("Could not determine the display configuration.", "画面の構成を確認できませんでした")
         }
         if displays.prefix(Int(count)).contains(where: { CGDisplayIsInMirrorSet($0) != 0 }) {
-            return LegacyCopy.text("Cannot start while displays are mirrored.", "ミラー表示の間は開始できません")
+            return LegacyCopy.text("Cannot start protection while displays are mirrored.", "ミラー表示の間は保護を開始できません")
         }
         for service in LayerService.agents {
             if let reason = registrationFailure(.agent(plistName: service.plistName)) { return reason }
@@ -536,7 +536,7 @@ final class ProtectionController: ObservableObject {
                 // This fallback for unavailable Touch ID requires someone to hold Esc.
                 for input in activeInputs {
                     if await input.takeEscapeRequest(), locked || unlockFailure != nil {
-                        handOffToSessionLock(LegacyCopy.text("Esc was held.", "Esc の長押しを受けました"))
+                        handOffToSessionLock(LegacyCopy.text("Detected an Esc hold.", "Esc の長押しを検知しました"))
                         return
                     }
                 }
@@ -555,7 +555,7 @@ final class ProtectionController: ObservableObject {
                     }
                 }
                 if inputStates.isEmpty || inputStates.contains(where: { $0 != true }) {
-                    handOffToSessionLock(LegacyCopy.text("Input blocking was lost.", "入力の遮断が失われました"))
+                    handOffToSessionLock(LegacyCopy.text("Input blocking stopped.", "入力を遮断できなくなりました"))
                     return
                 }
                 if locked {
@@ -574,8 +574,8 @@ final class ProtectionController: ObservableObject {
 
     private func degradation(gamma: Bool, cover: Bool) -> String? {
         if isMirrored { return LegacyCopy.text("Mirrored displays are unsupported.", "ミラー表示には対応していません") }
-        if !gamma { return LegacyCopy.text("Gamma shielding was lost.", "ガンマが失われました") }
-        if usesCover && !cover { return LegacyCopy.text("The display cover was lost.", "覆いが失われました") }
+        if !gamma { return LegacyCopy.text("Gamma shielding was lost.", "ガンマによる遮蔽が失われました") }
+        if usesCover && !cover { return LegacyCopy.text("The display cover was lost.", "画面の覆いが失われました") }
         return nil
     }
 

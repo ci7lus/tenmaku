@@ -31,7 +31,7 @@ struct GeneralSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             } footer: {
-                Text(inputMode.explanation + LegacyCopy.text(" Install the helper and grant permissions in Getting Started. Changes apply the next time you start protection.", " ヘルパーのインストールと許可の設定は「はじめに」で行えます。変更は次の保護開始から反映します。"))
+                Text(inputMode.explanation + LegacyCopy.text(" Install the helper and grant permissions in Getting Started. Changes apply the next time you start protection.", " ヘルパーのインストールと許可の設定は「はじめに」で行えます。変更は次に保護を開始したときから反映されます。"))
                     .font(.footnote)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -47,9 +47,9 @@ struct GeneralSettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section {
-                Stepper(LegacyCopy.text("Hold Duration for the Unlock Key: \(unlockHoldSeconds) seconds", "解除するキーの長押し: \(unlockHoldSeconds) 秒"), value: $unlockHoldSeconds, in: 1...30)
+                Stepper(LegacyCopy.text("Hold Duration for Unlocking: \(unlockHoldSeconds) seconds", "解除のための長押し: \(unlockHoldSeconds) 秒"), value: $unlockHoldSeconds, in: 1...30)
             } footer: {
-                Text(LegacyCopy.text("While protection is on, hold a key other than Esc for this duration. Touch Touch ID when you hear the sound. This change applies the next time you start protection.", "保護中に Esc 以外のキーをこの秒数押し続けると音が鳴ります。音が鳴ったら Touch ID に触れて解除します。次に保護を開始したときから反映します。"))
+                Text(LegacyCopy.text("While protection is on, hold a key other than Esc for the set duration. Touch Touch ID when you hear the sound. Changes apply the next time you start protection.", "保護中に Esc 以外のキーを設定した秒数だけ押し続けると音が鳴ります。音が鳴ったら Touch ID に触れて解除します。変更は次に保護を開始したときから反映されます。"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -61,7 +61,7 @@ struct GeneralSettingsView: View {
                 }
             } footer: {
                 // A display notch can hide the menu bar icon.
-                Text(LegacyCopy.text("If the menu bar icon is hidden, start protection or request authentication here. Protection stays on until you authenticate with Touch ID.", "メニューバーにアイコンが見えないときは、ここから開始や解除の認証を要求できます。本人が Touch ID で認証するまで保護は解除されません。"))
+                Text(LegacyCopy.text("If the menu bar icon is hidden, you can start protection or request authentication here. Protection stays on until you authenticate with Touch ID.", "メニューバーにアイコンが見えないときは、ここから保護を開始したり、解除の認証を要求したりできます。本人が Touch ID で認証するまで保護は解除されません。"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -78,9 +78,9 @@ struct GeneralSettingsView: View {
     private var footer: String {
         switch shieldMode {
         case .gammaAndCover:
-            LegacyCopy.text("Gamma and a black cover that stays out of captures shield the displays together. If one layer drops, the other stays in place.", "ガンマと、撮影に写らない黒い覆いを重ねて画面を守ります。どちらか一方が外れても、もう一方が残ります。")
+            LegacyCopy.text("Gamma and a black cover that stays out of captures shield the displays together. If either is removed, the other stays in place.", "ガンマと、撮影に写らない黒い覆いを重ねて画面を守ります。どちらか一方の遮蔽が解除されても、もう一方の遮蔽は残ります。")
         case .gammaOnly:
-            LegacyCopy.text("Gamma alone shields the displays. Gamma can reset and reveal the desktop if a process that set gamma exits or if the display configuration changes.", "ガンマだけで画面を守ります。ガンマを設定したプロセス（このアプリ以外も含む）の終了や画面の再構成で、ガンマが元に戻り、内容が見えることがあります。")
+            LegacyCopy.text("Gamma alone shields the displays. If any process that set gamma exits or the display configuration changes, gamma can reset and reveal the desktop.", "ガンマだけで画面を守ります。ガンマを設定したプロセス（このアプリ以外も含む）が終了したり、画面の構成が変わったりすると、ガンマが元に戻り、画面の内容が見えることがあります。")
         }
     }
 }

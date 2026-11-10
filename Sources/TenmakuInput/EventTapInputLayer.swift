@@ -101,7 +101,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                 guard generation == current, filter.isDraining else { return }
                 // Keep the display shielded if Secure Event Input prevented receiving a release and the user still cannot interact.
                 // Keep filtering here so the UI can maintain shielding and hand off to the system lock.
-                finishReleases("Could not confirm that the keys and buttons were released.")
+                finishReleases("Could not confirm that the keys and mouse buttons were released.")
             }
         }
     }

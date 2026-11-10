@@ -30,7 +30,7 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
                 if current == generation { stop() }
             }
             #endif
-            reply(allCovered ? nil : "Could not cover all displays.")
+            reply(allCovered ? nil : "Could not show the cover on every display.")
         }
     }
 

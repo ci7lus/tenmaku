@@ -16,16 +16,16 @@ enum LegacyCopy {
             "TenmakuInput の入力監視を許可してください"
         case "Check the Input Monitoring and Accessibility permissions for TenmakuInput.":
             "TenmakuInput の入力監視とアクセシビリティの許可を確認してください"
-        case "Could not confirm that the keys and buttons were released.":
-            "キーとボタンの解放を確認できませんでした"
-        case "Could not cover all displays.":
-            "覆いを全画面に出せませんでした"
+        case "Could not confirm that the keys and mouse buttons were released.":
+            "キーとマウスボタンが離されたことを確認できませんでした"
         case "Could not monitor input control.":
             "入力の制御を監視できませんでした"
         case "Could not seize the input devices.":
             "入力機器を取得できませんでした"
-        case "Could not set gamma to zero on all displays.":
-            "ガンマを全ゼロにできませんでした"
+        case "Could not set all gamma values to zero.":
+            "ガンマの値をすべてゼロにできませんでした"
+        case "Could not show the cover on every display.":
+            "すべての画面に覆いを表示できませんでした"
         case "Could not start input control.":
             "入力の制御を開始できませんでした"
         case "Input control has stopped.":
@@ -35,7 +35,7 @@ enum LegacyCopy {
         case "Release the keys and mouse buttons you are holding.":
             "押しているキーとマウスボタンを離してください"
         case "Set the hold duration to between 1 and 30 seconds.":
-            "長押しは1〜30秒で設定してください"
+            "長押しの時間は1〜30秒で設定してください"
         default:
             formattedError(message)
         }

@@ -92,11 +92,11 @@ final class StatusMenu: NSObject {
     private func apply(_ state: ProtectionState) {
         switch state {
         case .idle: stateItem.title = LegacyCopy.text("Protection Off", "未保護")
-        case .starting: stateItem.title = LegacyCopy.text("Starting…", "開始しています…")
+        case .starting: stateItem.title = LegacyCopy.text("Starting Protection…", "保護を開始しています…")
         case .shielded:
             stateItem.title = protection.unlockFailure.map { LegacyCopy.text("Could not unlock: \($0)", "解除できませんでした: \($0)") } ?? LegacyCopy.text("Protection On", "保護中")
-        case .interrupted: stateItem.title = LegacyCopy.text("Paused (macOS Session Locked)", "中断中（セッションがロックされています）")
-        case .handingOff(let reason): stateItem.title = LegacyCopy.text("Switching to the Lock Screen: \(reason)", "ロックへ引き渡し中: \(reason)")
+        case .interrupted: stateItem.title = LegacyCopy.text("Paused (macOS Screen Locked)", "中断中（macOS の画面がロックされています）")
+        case .handingOff(let reason): stateItem.title = LegacyCopy.text("Switching to the macOS Lock Screen: \(reason)", "macOS の画面ロックに切り替えています: \(reason)")
         case .failed(let reason): stateItem.title = LegacyCopy.text("Failed: \(reason)", "失敗: \(reason)")
         }
         indicator = state == .idle ? .unlocked : .locked
