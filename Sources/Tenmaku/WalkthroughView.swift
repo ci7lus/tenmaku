@@ -155,7 +155,10 @@ struct WalkthroughView: View {
             .padding(16)
         }
         .frame(width: 520, height: 340)
-        .onAppear(perform: refresh)
+        .onAppear {
+            if completed { step = .summary }
+            refresh()
+        }
         .onChange(of: step) { _ in refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             refresh()
@@ -231,7 +234,6 @@ struct WalkthroughView: View {
 
     private func finish() {
         completed = true
-        step = .welcome
         NSApp.keyWindow?.close()
     }
 

@@ -61,9 +61,8 @@ final class SettingsWindowController {
     }()
 
     func show(tab: SettingsTab? = nil) {
-        if let tab {
-            tabs.selectedTabViewItemIndex = tab.rawValue
-        }
+        let selectedTab = tab ?? (UserDefaults.standard.bool(forKey: DefaultsKey.walkthroughCompleted) ? .general : .walkthrough)
+        tabs.selectedTabViewItemIndex = selectedTab.rawValue
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
