@@ -1,6 +1,7 @@
 import Foundation
 import IOKit
 import IOKit.hid
+import IOKit.pwr_mgt
 import TenmakuShared
 
 private let seizeOption = IOOptionBits(kIOHIDOptionsTypeSeizeDevice)
@@ -27,6 +28,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var holds: [PressedControl: DispatchWorkItem] = [:]
     private var unlockHoldSeconds = Double(defaultUnlockHoldSeconds)
     private var generation = 0
+    private var sleepAssertion: IOPMAssertionID?
     #if TENMAKU_TEST_BUILD
     private var crashWatcher: DispatchSourceTimer?
     #endif
@@ -75,6 +77,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                 stop()
                 return reply("Could not seize the input devices.")
             }
+            preventIdleSleep()
             generation += 1
             #if TENMAKU_TEST_BUILD
             let current = generation
@@ -146,10 +149,31 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
     #endif
 
+    // Prevent the displays and Mac from sleeping while idle so Codex and Claude can keep working.
+    private func preventIdleSleep() {
+        guard sleepAssertion == nil else { return }
+        var id = IOPMAssertionID(0)
+        // A sleep assertion failure leaves shielding and input blocking available, so proceed with activation.
+        guard IOPMAssertionCreateWithName(
+            kIOPMAssertPreventUserIdleDisplaySleep as CFString,
+            IOPMAssertionLevel(kIOPMAssertionLevelOn),
+            "Tenmaku lock" as CFString,
+            &id
+        ) == kIOReturnSuccess else { return }
+        sleepAssertion = id
+    }
+
+    private func allowIdleSleep() {
+        guard let id = sleepAssertion else { return }
+        IOPMAssertionRelease(id)
+        sleepAssertion = nil
+    }
+
     // Releasing a device with controls held can send a press to the desktop. Keep the device seized until those controls are released.
     private func stop() {
         generation += 1
         engaged = false
+        allowIdleSleep()
         holds.values.forEach { $0.cancel() }
         holds = [:]
         for id in Array(seized.keys) where !isPressed(id) { close(id) }
