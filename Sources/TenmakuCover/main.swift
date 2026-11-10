@@ -34,7 +34,7 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func release(reply: @escaping @Sendable (String?) -> Void) {
+    func release(afterSessionLock: Bool, reply: @escaping @Sendable (String?) -> Void) {
         DispatchQueue.main.async { [self] in
             stop()
             reply(nil)
@@ -57,8 +57,8 @@ final class CoverLayer: NSObject, ShieldLayer, @unchecked Sendable {
         reply(false)
     }
 
-    func sessionIsLocked(uid: UInt32, reply: @escaping @Sendable (Bool) -> Void) {
-        reply(false)
+    func hasProtection(reply: @escaping @Sendable (Bool) -> Void) {
+        DispatchQueue.main.async { [self] in reply(engaged || !windows.isEmpty) }
     }
 
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {

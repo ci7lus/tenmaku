@@ -35,7 +35,7 @@ The user can choose independently whether to use the helper and concealment wind
 
 | Configuration | Limitations to document |
 | --- | --- |
-| Without the helper | While Secure Event Input is active, such as in masked fields or with Secure Keyboard Entry in Terminal, the app cannot block physical keystrokes. |
+| Without the helper | While Secure Event Input is active, such as in masked fields or with Secure Keyboard Entry in Terminal, the app cannot block physical keystrokes or detect a key hold. The app also blocks AI operations it cannot distinguish from physical input, including some Claude clicks. On 2026-11-10, the user decided to add this configuration with its limitations stated in the UI. |
 | Without concealment windows | Gamma alone protects the displays. Display reconfiguration or the exit of a process that set gamma, including one outside this app, can reset gamma and expose the contents. |
 
 Apple documents the concealment windows' `NSWindow.sharingType = .none` setting as legacy. Let users disable the windows in case a future macOS release includes them in captures.
@@ -157,7 +157,7 @@ Hand off from the app lock to the macOS session lock if the helper stops or if t
 
 - macOS documents Control-Command-Q as the screen lock shortcut. Sending its key events through the public `CGEventPost` API is a test candidate. The API contract does not guarantee that macOS handles synthetic input as a lock action or that the lock takes effect. Include the target session, event posting permissions, and active input filter in hardware tests. The reference and SDK review did not find a public API that lets an ordinary app lock the target session directly.
 - Endpoint Security's `ES_EVENT_TYPE_NOTIFY_LW_SESSION_LOCK` requires an entitlement from Apple and is excluded.
-- Verify a session lock only if both sources report that the target session is locked. The helper reads `CGSSessionScreenIsLocked` from `IOConsoleUsers` at the IORegistry root and the app reads the same key from `CGSessionCopyCurrentDictionary`. The functions are public APIs. The key name is undocumented. If the key changes in a future macOS release, verification fails and the app keeps concealment in place. Document this limitation. Exclude the distributed notification `com.apple.screenIsLocked` from verification because its name is undocumented and it may be missed. Event delivery or a session switch notification alone does not establish that the lock took effect.
+- Verify a session lock only if `CGSSessionScreenIsLocked` shows the target session as locked in both `IOConsoleUsers` at the IORegistry root and the result of `CGSessionCopyCurrentDictionary`. The app reads both values independently of the helper's presence or response. Reading them as the user was verified. The functions are public APIs. The key name is undocumented. If the key changes in a future macOS release, verification fails and the app keeps concealment in place. Document this limitation. Exclude the distributed notification `com.apple.screenIsLocked` from verification because its name is undocumented and it may be missed. Event delivery or a session switch notification alone does not establish that the lock took effect.
 
 Once the app verifies the session lock, it may remove concealment so the lock screen becomes visible. Until then, keep all remaining protections in place. The two keys change before the lock screen is drawn, and removing concealment based on the keys alone exposed the desktop. Remove concealment only after all three conditions are met.
 

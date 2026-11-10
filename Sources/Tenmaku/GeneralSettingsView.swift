@@ -16,12 +16,25 @@ enum ShieldMode: String, CaseIterable, Identifiable {
 }
 
 struct GeneralSettingsView: View {
-    let start: () -> Void
+    @ObservedObject var protection: ProtectionController
     @AppStorage(DefaultsKey.shieldMode) private var shieldMode: ShieldMode = .gammaAndCover
     @AppStorage(DefaultsKey.unlockHoldSeconds) private var unlockHoldSeconds = defaultUnlockHoldSeconds
+    @State private var inputMode: InputProtectionMode = .selected
 
     var body: some View {
         Form {
+            Section {
+                HStack {
+                    Text(LegacyCopy.text("Input Blocking", "入力の遮断"))
+                    Spacer()
+                    Text(inputMode.title)
+                        .foregroundStyle(.secondary)
+                }
+            } footer: {
+                Text(inputMode.explanation + LegacyCopy.text(" Install the helper and grant permissions in Getting Started. Changes apply the next time you start protection.", " ヘルパーのインストールと許可の設定は「はじめに」で行えます。変更は次の保護開始から反映します。"))
+                    .font(.footnote)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Section {
                 Picker(LegacyCopy.text("Screen Shielding", "画面の遮蔽"), selection: $shieldMode) {
                     ForEach(ShieldMode.allCases) { mode in
@@ -41,10 +54,14 @@ struct GeneralSettingsView: View {
                     .foregroundStyle(.secondary)
             }
             Section {
-                Button(LegacyCopy.text("Start Protection", "保護を開始"), action: start)
+                HStack {
+                    Button(LegacyCopy.text("Start Protection", "保護を開始"), action: protection.start)
+                    Button(LegacyCopy.text("End Protection…", "保護を解除…"), action: protection.requestUnlock)
+                        .disabled(!protection.canRequestUnlock)
+                }
             } footer: {
                 // A display notch can hide the menu bar icon.
-                Text(LegacyCopy.text("You can start protection here if the menu bar icon is hidden.", "メニューバーにアイコンが見えないときは、ここから開始できます。"))
+                Text(LegacyCopy.text("If the menu bar icon is hidden, start protection or request authentication here. Protection stays on until you authenticate with Touch ID.", "メニューバーにアイコンが見えないときは、ここから開始や解除の認証を要求できます。本人が Touch ID で認証するまで保護は解除されません。"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -52,6 +69,10 @@ struct GeneralSettingsView: View {
         .formStyle(.grouped)
         .frame(width: 520)
         .fixedSize()
+        .onAppear { inputMode = .selected }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            inputMode = .selected
+        }
     }
 
     private var footer: String {

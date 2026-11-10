@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>jp.pronama.tenmaku.input</string>
+	<key>BundleProgram</key>
+	<string>Contents/Library/Helpers/TenmakuInput.app/Contents/MacOS/TenmakuInput</string>
+	<key>MachServices</key>
+	<dict>
+		<key>jp.pronama.tenmaku.input</key>
+		<true/>
+	</dict>
+	<key>LimitLoadToSessionType</key>
+	<string>Aqua</string>
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>jp.pronama.tenmaku</string>
+	</array>
+</dict>
+</plist>

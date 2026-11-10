@@ -90,7 +90,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func release(reply: @escaping @Sendable (String?) -> Void) {
+    func release(afterSessionLock: Bool, reply: @escaping @Sendable (String?) -> Void) {
         DispatchQueue.main.async { [self] in
             stop()
             reply(nil)
@@ -122,8 +122,8 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         }
     }
 
-    func sessionIsLocked(uid: UInt32, reply: @escaping @Sendable (Bool) -> Void) {
-        reply(consoleSessionIsLocked(uid: uid) == true)
+    func hasProtection(reply: @escaping @Sendable (Bool) -> Void) {
+        DispatchQueue.main.async { [self] in reply(engaged || !seized.isEmpty) }
     }
 
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {

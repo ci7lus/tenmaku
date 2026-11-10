@@ -6,7 +6,7 @@ A recommendation is a design proposal that verification has yet to confirm. The 
 
 ## Scope of the first release
 
-- Use the helper in the first release. Defer the configuration without the helper to a later release until unlock signaling and session lock verification are defined. See [Configurations and limitations](SPEC.md#configurations-and-limitations).
+- The administrator-privileged helper is optional. On 2026-11-10, the user decided to add a configuration without the helper and document its limitations. See [input control without the helper](HELPERLESS_INPUT.md) for user-level input control, unlock, restoration, and known limitations.
 - Provide settings for gamma with concealment windows and gamma alone. Default to using both.
 - Use Touch ID as the only unlock method. Password unlock (A17 to A19) is outside the scope of the first release.
 - Support built-in displays and extended external displays. Start the lock only when mirroring is inactive.
@@ -30,10 +30,11 @@ Separate the gamma and concealment window layers into different processes so one
 
 | Process | Runs as | Role |
 | --- | --- | --- |
-| UI (main app) | User | Starts the lock and shows its state. Authenticates with Touch ID through `LAContext`. Requests a session lock by posting Control-Command-Q with `CGEventPost`. Checks `CGSessionCopyCurrentDictionary` and the `loginwindow` window to help verify the lock. |
+| UI (main app) | User | Starts the lock and shows its state. Authenticates with Touch ID through `LAContext`. Requests a session lock by posting Control-Command-Q with `CGEventPost`. Verifies the session lock with `CGSessionCopyCurrentDictionary`, `IOConsoleUsers`, and the `loginwindow` window. |
 | Gamma | User's login session | Owns the gamma layer. |
 | Concealment windows | User's login session | Owns the concealment window layer. |
-| Helper | root (`SMAppService.daemon`) | Owns the input layer. Holds `kIOPMAssertPreventUserIdleDisplaySleep` for as long as it owns the layer. Signals an unlock request when it detects a physical key hold while locked. Reads `CGSSessionScreenIsLocked` in `IOConsoleUsers`. |
+| Helper | root (`SMAppService.daemon`) | Owns the input layer. Holds `kIOPMAssertPreventUserIdleDisplaySleep` for as long as it owns the layer. Signals an unlock request when it detects a physical key hold while locked. |
+| User-level input control (without the helper) | User (`SMAppService.agent`) | Owns the session event tap. Passes synthetic input with a positive PID and drops input it cannot distinguish from physical input. Detects key holds, waits for held inputs to be released, and prevents idle sleep. Secure Event Input and some AI operations have limitations. |
 
 - Recommendation. Register gamma and concealment windows as agents with `SMAppService.agent` so they run independently of the UI process.
 - Recommendation. Keep lock state in one place outside the UI, including start in progress, locked, unlock in progress, fault, and handoff to the session lock. Have the UI read the state each time it starts (A12 in the specification).
@@ -63,13 +64,15 @@ Check the display configuration and stop if mirroring is active. Then apply gamm
 2. The helper signals the main app. With a fresh `LAContext` for the request, the main app requests `.deviceOwnerAuthenticationWithBiometrics`. Set `localizedFallbackTitle` to an empty string.
 3. After verifying successful authentication for the current request, unblock input, remove the concealment windows, then restore gamma to ColorSync settings with `CGDisplayRestoreColorSyncSettings`.
 
+Without the helper, user-level input control makes the same unlock request. Secure Event Input prevents detection of key holds, so an authorized path such as Codex can also request Touch ID for the current unlock via **Unlock…** in the menu or General settings. Keep protections in place until the user authenticates.
+
 ## Handoff to the session lock
 
 Hand off when the helper stops. If Touch ID is unavailable, such as during `biometryLockout`, handoff requires the user to hold Esc for 10 seconds after a failed unlock while the app is still locked, or during an interruption caused by a macOS session lock. See [Fallback to macOS Session Lock](SPEC.md#fallback-to-macos-session-lock).
 
 1. Keep the remaining protections in place and send Control-Command-Q.
 2. Wait for all three conditions.
-   1. Both `CGSSessionScreenIsLocked` values report a lock. The helper reads the value in `IOConsoleUsers` and the main app reads it in `CGSessionCopyCurrentDictionary`. If the helper has stopped, the main app reads `IOConsoleUsers` directly. Verification showed that it can do so as the user.
+   1. The main app sees `CGSSessionScreenIsLocked` report a lock in both `IOConsoleUsers` and the `CGSessionCopyCurrentDictionary` result. The app can read `IOConsoleUsers` as the user, independently of the helper's presence or response.
    2. The full-display `loginwindow` window found through `CGWindowListCopyWindowInfo` has opacity 1. It was at layer 2001 during verification.
    3. At least 1.5 seconds have passed since condition 1 was met.
 3. Once all three conditions hold, remove gamma and the concealment windows and end the app lock. After the user authenticates with macOS, leave the app unlocked.

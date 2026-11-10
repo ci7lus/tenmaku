@@ -21,6 +21,7 @@ HELPERS="$APP/Contents/Library/Helpers"
 HELPER_APP="$HELPERS/TenmakuHelper.app"
 GAMMA_APP="$HELPERS/TenmakuGamma.app"
 COVER_APP="$HELPERS/TenmakuCover.app"
+INPUT_APP="$HELPERS/TenmakuInput.app"
 
 cd "$ROOT"
 swift build -c release --arch arm64 --arch x86_64 "${SWIFT_FLAGS[@]}"
@@ -33,15 +34,17 @@ mkdir -p "$APP/Contents/MacOS" \
          "$APP/Contents/Library/LaunchDaemons" \
          "$HELPER_APP/Contents/MacOS" \
          "$GAMMA_APP/Contents/MacOS" \
-         "$COVER_APP/Contents/MacOS"
+         "$COVER_APP/Contents/MacOS" \
+         "$INPUT_APP/Contents/MacOS"
 
 cp Bundle/Tenmaku-Info.plist "$APP/Contents/Info.plist"
 cp Bundle/TenmakuHelper-Info.plist "$HELPER_APP/Contents/Info.plist"
 cp Bundle/TenmakuGamma-Info.plist "$GAMMA_APP/Contents/Info.plist"
 cp Bundle/TenmakuCover-Info.plist "$COVER_APP/Contents/Info.plist"
+cp Bundle/TenmakuInput-Info.plist "$INPUT_APP/Contents/Info.plist"
 cp Bundle/LaunchAgents/*.plist "$APP/Contents/Library/LaunchAgents/"
 cp Bundle/LaunchDaemons/*.plist "$APP/Contents/Library/LaunchDaemons/"
-for plist in "$APP/Contents/Info.plist" "$HELPER_APP/Contents/Info.plist" "$GAMMA_APP/Contents/Info.plist" "$COVER_APP/Contents/Info.plist"; do
+for plist in "$APP/Contents/Info.plist" "$HELPER_APP/Contents/Info.plist" "$GAMMA_APP/Contents/Info.plist" "$COVER_APP/Contents/Info.plist" "$INPUT_APP/Contents/Info.plist"; do
   plutil -replace CFBundleShortVersionString -string "$VERSION" "$plist"
   plutil -replace CFBundleVersion -string "$BUILD_NUMBER" "$plist"
 done
@@ -59,6 +62,7 @@ cp "$BIN/Tenmaku" "$APP/Contents/MacOS/"
 cp "$BIN/TenmakuHelper" "$HELPER_APP/Contents/MacOS/"
 cp "$BIN/TenmakuGamma" "$GAMMA_APP/Contents/MacOS/"
 cp "$BIN/TenmakuCover" "$COVER_APP/Contents/MacOS/"
+cp "$BIN/TenmakuInput" "$INPUT_APP/Contents/MacOS/"
 
 sign() {
   codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$@"
@@ -68,6 +72,7 @@ sign() {
 sign "$GAMMA_APP"
 sign "$COVER_APP"
 sign "$HELPER_APP"
+sign "$INPUT_APP"
 sign "$APP"
 
 codesign --verify --deep --strict --verbose=2 "$APP"

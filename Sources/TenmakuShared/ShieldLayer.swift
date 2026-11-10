@@ -5,10 +5,13 @@ public enum LayerService: String, Sendable {
     case gamma = "jp.pronama.tenmaku.gamma"
     case cover = "jp.pronama.tenmaku.cover"
     case input = "jp.pronama.tenmaku.helper"
+    case sessionInput = "jp.pronama.tenmaku.input"
 
     public static let agents: [LayerService] = [.gamma, .cover]
 
     public var plistName: String { rawValue + ".plist" }
+
+    public var isPrivileged: Bool { self == .input }
 }
 
 private let signingTeamRequirement: String? = {
@@ -35,6 +38,7 @@ public let sameTeamRequirement = signingTeamRequirement ?? "never"
 public let testAutoReleaseSeconds = 300.0
 
 public let requestInputMonitoringArgument = "--request-input-monitoring"
+public let requestSessionInputAccessArgument = "--request-input-access"
 
 public let defaultUnlockHoldSeconds = 5
 
@@ -55,7 +59,8 @@ public func exitWhenIdle(_ isIdle: @escaping @Sendable () -> Bool) {
     func preflight(reply: @escaping @Sendable (String?) -> Void)
     /// Return nil if application was confirmed, or an error message if it failed.
     func engage(reply: @escaping @Sendable (String?) -> Void)
-    func release(reply: @escaping @Sendable (String?) -> Void)
+    /// Pass true for afterSessionLock only after confirming the lock screen is present.
+    func release(afterSessionLock: Bool, reply: @escaping @Sendable (String?) -> Void)
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void)
     /// Set the key hold duration for unlock. Only the input layer uses this value.
     func setUnlockHold(seconds: Double, reply: @escaping @Sendable (String?) -> Void)
@@ -63,8 +68,8 @@ public func exitWhenIdle(_ isIdle: @escaping @Sendable () -> Bool) {
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void)
     /// Report whether Esc has been held long enough since the last call. Only the input layer returns true.
     func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void)
-    /// Check whether the target user's session is locked via `IOConsoleUsers`. Only the input layer returns true.
-    func sessionIsLocked(uid: UInt32, reply: @escaping @Sendable (Bool) -> Void)
+    /// Report whether changes remain in place or input release is pending, even when protection cannot be confirmed.
+    func hasProtection(reply: @escaping @Sendable (Bool) -> Void)
 }
 
 public final class LayerListener: NSObject, NSXPCListenerDelegate {

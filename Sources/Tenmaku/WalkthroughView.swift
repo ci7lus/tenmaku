@@ -8,6 +8,7 @@ enum PermissionState: Equatable {
     case granted
     case missing
     case needsApproval
+    case notRequired
     case unavailable(String)
 
     var label: String {
@@ -15,6 +16,7 @@ enum PermissionState: Equatable {
         case .granted: LegacyCopy.text("Allowed", "許可済み")
         case .missing: LegacyCopy.text("Permission Required", "未許可")
         case .needsApproval: LegacyCopy.text("Awaiting Approval", "承認待ち")
+        case .notRequired: LegacyCopy.text("Skipped", "スキップ")
         case .unavailable(let reason): reason
         }
     }
@@ -23,6 +25,7 @@ enum PermissionState: Equatable {
         switch self {
         case .granted: "checkmark.circle.fill"
         case .missing, .needsApproval: "exclamationmark.circle.fill"
+        case .notRequired: "minus.circle"
         case .unavailable: "circle.dashed"
         }
     }
@@ -31,7 +34,7 @@ enum PermissionState: Equatable {
         switch self {
         case .granted: .green
         case .missing, .needsApproval: .orange
-        case .unavailable: .secondary
+        case .notRequired, .unavailable: .secondary
         }
     }
 }
@@ -58,7 +61,7 @@ enum WalkthroughStep: Int, CaseIterable {
     var title: String {
         switch self {
         case .welcome: LegacyCopy.text("Welcome to Tenmaku", "Tenmaku へようこそ")
-        case .helper: LegacyCopy.text("Install the Helper", "ヘルパーを導入する")
+        case .helper: LegacyCopy.text("Install Helper (Optional)", "ヘルパーのインストール（任意）")
         case .inputMonitoring: LegacyCopy.text("Allow Input Monitoring", "入力監視を許可する")
         case .postEvent: LegacyCopy.text("Allow Screen Lock", "画面ロックの操作を許可する")
         case .summary: LegacyCopy.text("Setup Status", "準備の状況")
@@ -68,20 +71,20 @@ enum WalkthroughStep: Int, CaseIterable {
     var shortTitle: String {
         switch self {
         case .welcome, .summary: ""
-        case .helper: LegacyCopy.text("Helper", "ヘルパー")
-        case .inputMonitoring: LegacyCopy.text("Input Monitoring", "入力監視")
+        case .helper: LegacyCopy.text("Input Blocking", "入力の遮断")
+        case .inputMonitoring: LegacyCopy.text("Input Control", "入力の制御")
         case .postEvent: LegacyCopy.text("Screen Lock", "画面ロックの操作")
         }
     }
 
-    var message: String {
+    func message(inputMode: InputProtectionMode) -> String {
         switch self {
         case .welcome:
             LegacyCopy.text("When you step away from your Mac, Tenmaku hides the screen and blocks the local keyboard and mouse. Codex or Claude can still capture and control the same desktop. Use Touch ID to end protection when you return.", "Mac から離れている間、画面を隠して、その場のキーボードとマウスを止めます。Codex や Claude は、その間も同じデスクトップを撮影・操作できます。戻ったら Touch ID で解除します。")
         case .helper:
-            LegacyCopy.text("A privileged helper runs in the background to block the keyboard and mouse. Approve it in Login Items in System Settings during installation.", "キーボードとマウスを止めるために、管理者権限のヘルパーをバックグラウンドで動かします。導入するときは、システム設定の「ログイン項目」で承認します。")
+            LegacyCopy.text("The helper can block physical keys while Secure Event Input is active. Click Next to skip installation. Without the helper, Tenmaku cannot detect physical keys or key holds during Secure Event Input and blocks AI actions that it cannot distinguish from physical input. You can install it here later.", "ヘルパーをインストールすると、Secure Event Input 中の物理キーも止められます。インストールせずに「次へ」でスキップすることもできます。その場合、Secure Event Input 中の物理キーや長押しを検知できず、物理入力と区別できない AI の操作も遮断します。あとからここでインストールできます。")
         case .inputMonitoring:
-            LegacyCopy.text("The helper needs this permission to capture the keyboard and mouse.", "ヘルパーがキーボードとマウスを取得するために必要です。")
+            inputMode.permissionMessage
         case .postEvent:
             LegacyCopy.text("This lets Tenmaku lock your Mac if it can no longer maintain protection.", "保護を続けられなくなったときに、Mac の画面をロックするために使います。")
         case .summary:
@@ -113,21 +116,26 @@ enum WalkthroughStep: Int, CaseIterable {
 
 struct WalkthroughView: View {
     @AppStorage(DefaultsKey.walkthroughCompleted) private var completed = false
+    @State private var inputMode: InputProtectionMode = .selected
     @State private var step: WalkthroughStep = .welcome
     @State private var permissions: [WalkthroughStep: PermissionState] = [:]
+    @State private var refreshGeneration = 0
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 14) {
                 header
-                Text(step.title)
+                Text(step == .inputMonitoring ? inputMode.permissionTitle : step.title)
                     .font(.title2.weight(.semibold))
-                Text(step.message)
+                Text(step.message(inputMode: inputMode))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if step == .summary {
                     summary
+                } else if step == .helper, permissions[.helper] == .missing {
+                    Label(LegacyCopy.text("Not Installed", "未インストール"), systemImage: "minus.circle")
+                        .foregroundStyle(.secondary)
                 } else if let permission = permissions[step] {
                     Label(permission.label, systemImage: permission.symbol)
                         .foregroundStyle(permission.color)
@@ -154,7 +162,7 @@ struct WalkthroughView: View {
             }
             .padding(16)
         }
-        .frame(width: 520, height: 340)
+        .frame(width: 520, height: 440)
         .onAppear {
             if completed { step = .summary }
             refresh()
@@ -182,11 +190,15 @@ struct WalkthroughView: View {
     private var summary: some View {
         VStack(alignment: .leading, spacing: 6) {
             ForEach(WalkthroughStep.permissionSteps, id: \.self) { item in
-                if let permission = permissions[item] {
+                if let permission = summaryPermission(for: item) {
                     HStack {
                         Text(item.shortTitle)
                         Spacer()
-                        Label(permission.label, systemImage: permission.symbol)
+                        Label(
+                            item == .helper && (permission == .granted || permission == .notRequired)
+                                ? inputMode.title : permission.label,
+                            systemImage: permission.symbol
+                        )
                             .foregroundStyle(permission.color)
                     }
                 }
@@ -195,13 +207,18 @@ struct WalkthroughView: View {
         .frame(maxWidth: 360)
     }
 
+    private func summaryPermission(for item: WalkthroughStep) -> PermissionState? {
+        if item == .helper, permissions[.helper] == .missing { return .notRequired }
+        return permissions[item]
+    }
+
     @ViewBuilder
     private var action: some View {
         switch step {
         case .helper where permissions[.helper] == .needsApproval:
             Button(LegacyCopy.text("Open Login Items", "ログイン項目を開く")) { SMAppService.openSystemSettingsLoginItems() }
         case .helper where permissions[.helper] == .missing:
-            Button(LegacyCopy.text("Install", "導入する"), action: installHelper)
+            Button(LegacyCopy.text("Install", "インストール"), action: installHelper)
         case .inputMonitoring:
             Button(LegacyCopy.text("Request Permission", "許可を求める"), action: requestInputMonitoring)
                 .disabled(permissions[.inputMonitoring] != .missing)
@@ -246,19 +263,33 @@ struct WalkthroughView: View {
 
     // The daemon cannot request permission. Launch the helper app as the user.
     private func requestInputMonitoring() {
-        let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/Helpers/TenmakuHelper.app")
+        if inputMode == .eventTap {
+            let agent = SMAppService.agent(plistName: LayerService.sessionInput.plistName)
+            try? agent.register()
+            if agent.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+        }
+        let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/Helpers/\(inputMode.appName).app")
         let configuration = NSWorkspace.OpenConfiguration()
-        configuration.arguments = [requestInputMonitoringArgument]
+        configuration.arguments = [inputMode == .helper ? requestInputMonitoringArgument : requestSessionInputAccessArgument]
         NSWorkspace.shared.openApplication(at: helper, configuration: configuration)
     }
 
     private func refresh() {
+        refreshGeneration += 1
+        let generation = refreshGeneration
+        let mode = InputProtectionMode.selected
+        inputMode = mode
         for item in WalkthroughStep.permissionSteps {
             permissions[item] = item.permission
         }
-        guard permissions[.helper] == .granted else { return }
+        let registered = mode == .helper
+            ? permissions[.helper] == .granted
+            : SMAppService.agent(plistName: mode.service.plistName).status == .enabled
+        if mode == .eventTap { permissions[.inputMonitoring] = .missing }
+        guard registered else { return }
         Task {
-            let failure = await LayerClient(service: .input).preflight()
+            let failure = await LayerClient(service: mode.service).preflight()
+            guard generation == refreshGeneration, mode == inputMode else { return }
             permissions[.inputMonitoring] = failure == nil ? .granted : .missing
         }
     }

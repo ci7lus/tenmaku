@@ -25,6 +25,7 @@ final class StatusMenu: NSObject {
     private let protection: ProtectionController
     private let stateItem = NSMenuItem(title: LegacyCopy.text("Protection Off", "未保護"), action: nil, keyEquivalent: "")
     private let startItem = NSMenuItem(title: LegacyCopy.text("Start Protection", "保護を開始"), action: nil, keyEquivalent: "")
+    private let unlockItem = NSMenuItem(title: LegacyCopy.text("End Protection…", "保護を解除…"), action: nil, keyEquivalent: "")
     #if TENMAKU_TEST_BUILD
     private let stopItem = NSMenuItem(title: LegacyCopy.text("Stop Shielding (Test)", "遮蔽を終了（試験用）"), action: nil, keyEquivalent: "")
     #endif
@@ -62,6 +63,10 @@ final class StatusMenu: NSObject {
         startItem.target = self
         startItem.action = #selector(startProtection)
         menu.addItem(startItem)
+        unlockItem.target = self
+        unlockItem.action = #selector(requestUnlock)
+        unlockItem.isEnabled = false
+        menu.addItem(unlockItem)
         #if TENMAKU_TEST_BUILD
         startItem.title = LegacyCopy.text("Start Shielding (Test)", "遮蔽を開始（試験用）")
         stopItem.target = self
@@ -96,6 +101,7 @@ final class StatusMenu: NSObject {
         }
         indicator = state == .idle ? .unlocked : .locked
         startItem.isEnabled = state == .idle
+        unlockItem.isEnabled = protection.canRequestUnlock
         if case .failed = state { startItem.isEnabled = true }
         #if TENMAKU_TEST_BUILD
         writeTestState()
@@ -105,6 +111,10 @@ final class StatusMenu: NSObject {
 
     @objc private func startProtection() {
         protection.start()
+    }
+
+    @objc private func requestUnlock() {
+        protection.requestUnlock()
     }
 
     #if TENMAKU_TEST_BUILD

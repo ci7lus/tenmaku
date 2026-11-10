@@ -23,7 +23,7 @@ enum SettingsTab: Int, CaseIterable {
     func content(protection: ProtectionController) -> AnyView {
         switch self {
         case .walkthrough: AnyView(WalkthroughView())
-        case .general: AnyView(GeneralSettingsView(start: protection.start))
+        case .general: AnyView(GeneralSettingsView(protection: protection))
         }
     }
 }
