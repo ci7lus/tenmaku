@@ -12,6 +12,12 @@ enum ProtectionIndicator {
     }
 }
 
+private let doorDropDuration = Duration.milliseconds(400)
+private let doorDropFrameInterval = 1.0 / 60
+private let statusIconViewBoxSide = 800.0
+// The area between the walls below the roof, in viewBox units with the origin at the lower-left corner.
+private let doorOpening = NSRect(x: 287, y: 112, width: 226, height: 359)
+
 @MainActor
 final class StatusMenu: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -23,8 +29,19 @@ final class StatusMenu: NSObject {
     private let stopItem = NSMenuItem(title: LegacyCopy.text("Stop Shielding (Test)", "遮蔽を終了（試験用）"), action: nil, keyEquivalent: "")
     #endif
 
+    private var doorDrop: Timer?
+    private var doorDropStart = ContinuousClock.now
+
     var indicator: ProtectionIndicator = .unlocked {
-        didSet { applyIndicator() }
+        didSet {
+            // Keep the door moving if the state changes during startup.
+            guard indicator != oldValue else { return }
+            if indicator == .locked, !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+                startDoorDrop()
+            } else {
+                applyIndicator()
+            }
+        }
     }
 
     init(protection: ProtectionController, openSettings: @escaping () -> Void) {
@@ -112,10 +129,56 @@ final class StatusMenu: NSObject {
     #endif
 
     private func applyIndicator() {
-        let image = NSImage(named: indicator.imageName)
+        doorDrop?.invalidate()
+        doorDrop = nil
+        show(NSImage(named: indicator.imageName))
+    }
+
+    private func show(_ image: NSImage?) {
         image?.isTemplate = true
         image?.accessibilityDescription = "Tenmaku"
         item.button?.image = image
+    }
+
+    private func startDoorDrop() {
+        doorDrop?.invalidate()
+        doorDropStart = .now
+        show(doorDropImage(progress: 0))
+        // Use the common run loop modes so the animation continues during menu tracking.
+        let timer = Timer(timeInterval: doorDropFrameInterval, target: self, selector: #selector(advanceDoorDrop), userInfo: nil, repeats: true)
+        RunLoop.main.add(timer, forMode: .common)
+        doorDrop = timer
+    }
+
+    @objc private func advanceDoorDrop() {
+        let elapsed = (ContinuousClock.now - doorDropStart) / doorDropDuration
+        guard elapsed < 1 else {
+            applyIndicator()
+            return
+        }
+        // Accelerate the door to make it look like it is falling.
+        show(doorDropImage(progress: elapsed * elapsed))
+    }
+
+    private func doorDropImage(progress: Double) -> NSImage? {
+        guard let open = NSImage(named: ProtectionIndicator.unlocked.imageName),
+              let closed = NSImage(named: ProtectionIndicator.locked.imageName) else { return nil }
+        return NSImage(size: open.size, flipped: false) { rect in
+            open.draw(in: rect)
+            // The images only differ at the door. Clip that region from the closed image and slide it in from above.
+            let scale = rect.width / statusIconViewBoxSide
+            let opening = NSRect(
+                x: doorOpening.minX * scale,
+                y: doorOpening.minY * scale,
+                width: doorOpening.width * scale,
+                height: doorOpening.height * scale
+            )
+            NSGraphicsContext.saveGraphicsState()
+            NSBezierPath(rect: opening).addClip()
+            closed.draw(in: rect.offsetBy(dx: 0, dy: opening.height * (1 - progress)))
+            NSGraphicsContext.restoreGraphicsState()
+            return true
+        }
     }
 
     @objc private func showSettings() {
