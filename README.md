@@ -10,8 +10,6 @@ scripts/build.sh                                           # Build and sign buil
 NOTARY_PROFILE=your-profile-name scripts/notarize.sh         # Notarize, staple the ticket, and verify with spctl
 ```
 
-`NOTARY_PROFILE` is the name of the credentials profile saved in Keychain with `xcrun notarytool store-credentials your-profile-name`. Set `SIGN_IDENTITY` to your Developer ID Application signing identity.
-
 | Location in the app bundle | Role |
 | --- | --- |
 | `Contents/MacOS/Tenmaku` | Menu bar UI and settings window |

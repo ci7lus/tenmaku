@@ -12,5 +12,6 @@ let package = Package(
         .executableTarget(name: "TenmakuHelper", dependencies: ["TenmakuShared"]),
         .executableTarget(name: "TenmakuInput", dependencies: ["TenmakuShared"]),
         .testTarget(name: "TenmakuSharedTests", dependencies: ["TenmakuShared"]),
+        .testTarget(name: "TenmakuTests", dependencies: ["Tenmaku", "TenmakuShared"]),
     ]
 )

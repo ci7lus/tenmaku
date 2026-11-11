@@ -1,22 +1,45 @@
 #!/bin/zsh
-# Assemble Tenmaku.app and sign it with Developer ID and Hardened Runtime.
-# Usage: scripts/build.sh
-# Environment variables: SIGN_IDENTITY (signing certificate), VERSION, BUILD_NUMBER
-#           Set TENMAKU_TEST_BUILD=1 to write a shielding test build to build/test/. Exclude it from distribution.
+# Assemble and sign Tenmaku.app. Use --archive to create an unsigned XCArchive.
+# Usage: scripts/build.sh [--archive <output.xcarchive>]
+# Environment variables: SIGN_IDENTITY, VERSION, BUILD_NUMBER
+# Set TENMAKU_TEST_BUILD=1 to create a display shielding test build in build/test/.
+# Keep test builds for local use.
 set -euo pipefail
 
 ROOT=${0:A:h:h}
-: "${SIGN_IDENTITY:?Set SIGN_IDENTITY to your Developer ID Application signing identity}"
 VERSION=${VERSION:-0.1.0}
 BUILD_NUMBER=${BUILD_NUMBER:-1}
 
-if [[ -n "${TENMAKU_TEST_BUILD:-}" ]]; then
+ARCHIVE=
+SWIFT_FLAGS=()
+if (( $# == 2 )) && [[ "$1" == --archive && "$2" == *.xcarchive ]]; then
+  ARCHIVE=${2:A}
+  if [[ -n "${TENMAKU_TEST_BUILD:-}" ]]; then
+    echo "Test builds cannot be exported as an XCArchive." >&2
+    exit 1
+  fi
+  if [[ -e "$ARCHIVE" || -L "$ARCHIVE" ]]; then
+    echo "Output path already exists: $ARCHIVE" >&2
+    exit 1
+  fi
+  mkdir -p "${ARCHIVE:h}"
+  STAGING_DIR=$(mktemp -d "${ARCHIVE:h}/.tenmaku-archive.XXXXXX")
+  trap 'rm -rf "$STAGING_DIR"' EXIT
+  STAGED_ARCHIVE="$STAGING_DIR/${ARCHIVE:t}"
+  APP="$STAGED_ARCHIVE/Products/Applications/Tenmaku.app"
+elif (( $# != 0 )); then
+  echo "Usage: scripts/build.sh [--archive <output.xcarchive>]" >&2
+  exit 1
+elif [[ -n "${TENMAKU_TEST_BUILD:-}" ]]; then
   APP="$ROOT/build/test/Tenmaku.app"
   SWIFT_FLAGS=(-Xswiftc -DTENMAKU_TEST_BUILD)
 else
   APP="$ROOT/build/Tenmaku.app"
-  SWIFT_FLAGS=()
 fi
+if [[ -z "$ARCHIVE" ]]; then
+  : "${SIGN_IDENTITY:?Set SIGN_IDENTITY to your Developer ID Application signing identity}"
+fi
+
 HELPERS="$APP/Contents/Library/Helpers"
 HELPER_APP="$HELPERS/TenmakuHelper.app"
 GAMMA_APP="$HELPERS/TenmakuGamma.app"
@@ -67,16 +90,40 @@ cp "$BIN/TenmakuGamma" "$GAMMA_APP/Contents/MacOS/"
 cp "$BIN/TenmakuCover" "$COVER_APP/Contents/MacOS/"
 cp "$BIN/TenmakuInput" "$INPUT_APP/Contents/MacOS/"
 
-sign() {
-  codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$@"
-}
+if [[ -z "$ARCHIVE" ]]; then
+  "$ROOT/scripts/resign.sh" "$APP"
+  exit
+fi
 
-# Sign nested components before the outer bundle.
-sign "$GAMMA_APP"
-sign "$COVER_APP"
-sign "$HELPER_APP"
-sign "$INPUT_APP"
-sign "$APP"
+mkdir "$STAGED_ARCHIVE/dSYMs"
+for bundle in "$APP" "$HELPER_APP" "$GAMMA_APP" "$COVER_APP" "$INPUT_APP"; do
+  name=${${bundle:t}%.app}
+  executable="$bundle/Contents/MacOS/$name"
+  # Remove the ad hoc signature added by the linker.
+  if codesign --display --arch arm64 "$executable" 2>/dev/null ||
+     codesign --display --arch x86_64 "$executable" 2>/dev/null; then
+    codesign --remove-signature "$executable"
+  fi
+  ditto "$BIN/$name.dSYM" "$STAGED_ARCHIVE/dSYMs/$name.dSYM"
+done
 
-codesign --verify --deep --strict --verbose=2 "$APP"
-echo "$APP"
+INFO="$STAGED_ARCHIVE/Info.plist"
+plutil -create xml1 "$INFO"
+plutil -insert ArchiveVersion -integer 2 "$INFO"
+plutil -insert CreationDate -date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$INFO"
+plutil -insert Name -string Tenmaku "$INFO"
+plutil -insert SchemeName -string Tenmaku "$INFO"
+plutil -insert ApplicationProperties -dictionary "$INFO"
+plutil -insert ApplicationProperties.ApplicationPath -string Applications/Tenmaku.app "$INFO"
+for key in CFBundleIdentifier CFBundleShortVersionString CFBundleVersion; do
+  value=$(plutil -extract "$key" raw -o - "$APP/Contents/Info.plist")
+  plutil -insert "ApplicationProperties.$key" -string "$value" "$INFO"
+done
+plutil -insert ApplicationProperties.Architectures -json '["arm64","x86_64"]' "$INFO"
+
+mv -n "$STAGED_ARCHIVE" "${ARCHIVE:h}/"
+if [[ -e "$STAGED_ARCHIVE" ]]; then
+  echo "Output path already exists: $ARCHIVE" >&2
+  exit 1
+fi
+echo "$ARCHIVE"
