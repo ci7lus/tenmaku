@@ -46,11 +46,41 @@ final class LayerFailureTests: XCTestCase {
         XCTAssertEqual(LayerFailure(rawValue: error.code), .inputControlStopped)
         XCTAssertTrue(error.userInfo.isEmpty)
     }
+
+    func testCoverControlExposesHandoffAndInheritedShieldLayerMethods() throws {
+        let responder = FailureResponder()
+        let listener = NSXPCListener.anonymous()
+        listener.delegate = responder
+        listener.resume()
+        let connection = NSXPCConnection(listenerEndpoint: listener.endpoint)
+        connection.remoteObjectInterface = NSXPCInterface(with: CoverControl.self)
+        connection.resume()
+        defer {
+            connection.invalidate()
+            listener.invalidate()
+        }
+        let handoff = expectation(description: "Receive shielding confirmation for handoff over XPC")
+        let protection = expectation(description: "Receive shared status over XPC")
+        let layer = try XCTUnwrap(connection.remoteObjectProxyWithErrorHandler { error in
+            XCTFail("XPC: \(error)")
+        } as? ShieldLayer)
+        let cover = try XCTUnwrap(layer as? CoverControl)
+        cover.holdForHandoff { covered in
+            XCTAssertTrue(covered)
+            handoff.fulfill()
+        }
+        layer.hasProtection { held in
+            XCTAssertFalse(held)
+            protection.fulfill()
+        }
+        wait(for: [handoff, protection], timeout: 5)
+        withExtendedLifetime(responder) {}
+    }
 }
 
-private final class FailureResponder: NSObject, NSXPCListenerDelegate, ShieldLayer {
+private final class FailureResponder: NSObject, NSXPCListenerDelegate, CoverControl {
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
-        connection.exportedInterface = NSXPCInterface(with: ShieldLayer.self)
+        connection.exportedInterface = NSXPCInterface(with: CoverControl.self)
         connection.exportedObject = self
         connection.resume()
         return true
@@ -65,4 +95,6 @@ private final class FailureResponder: NSObject, NSXPCListenerDelegate, ShieldLay
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }
     func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }
     func hasProtection(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }
+    func restoreCover(reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
+    func holdForHandoff(reply: @escaping @Sendable (Bool) -> Void) { reply(true) }
 }

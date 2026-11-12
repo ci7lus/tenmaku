@@ -1,7 +1,7 @@
 import ServiceManagement
 import TenmakuShared
 
-enum InputProtectionMode: String, CaseIterable {
+enum InputProtectionMode: String, CaseIterable, Codable {
     case eventTap
     case helper
 

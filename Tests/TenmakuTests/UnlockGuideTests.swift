@@ -15,7 +15,7 @@ struct UnlockGuideTests {
         let durations = try #require(InputHoldDurations(unlockSeconds: 7, escapeSeconds: 3))
 
         var presentations = 0
-        let cancelled = UnlockGuide.confirmIfNeeded(holdDurations: durations, defaults: defaults) { presented in
+        let cancelled = UnlockGuide.confirmIfNeeded(holdDurations: durations, inputMode: .helper, defaults: defaults) { presented in
             presentations += 1
             #expect(presented == durations)
             return (false, false)
@@ -23,7 +23,7 @@ struct UnlockGuideTests {
         #expect(!cancelled)
 
         for _ in 0..<2 {
-            let confirmed = UnlockGuide.confirmIfNeeded(holdDurations: durations, defaults: defaults) { _ in
+            let confirmed = UnlockGuide.confirmIfNeeded(holdDurations: durations, inputMode: .helper, defaults: defaults) { _ in
                 presentations += 1
                 return (true, false)
             }
@@ -37,13 +37,13 @@ struct UnlockGuideTests {
         let defaults = try #require(UserDefaults(suiteName: domain))
         defer { defaults.removePersistentDomain(forName: domain) }
 
-        let decision = UnlockGuide.confirmIfNeeded(holdDurations: .standard, defaults: defaults) { _ in
+        let decision = UnlockGuide.confirmIfNeeded(holdDurations: .standard, inputMode: .helper, defaults: defaults) { _ in
             (startLock, true)
         }
         #expect(decision == startLock)
 
         let reloaded = try #require(UserDefaults(suiteName: domain))
-        let skipped = UnlockGuide.confirmIfNeeded(holdDurations: .standard, defaults: reloaded) { _ in
+        let skipped = UnlockGuide.confirmIfNeeded(holdDurations: .standard, inputMode: .helper, defaults: reloaded) { _ in
             Issue.record("The unlock guide was shown after opting out.")
             return (false, false)
         }

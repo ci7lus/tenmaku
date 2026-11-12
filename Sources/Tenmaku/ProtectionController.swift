@@ -1,9 +1,11 @@
 import AppKit
 import ApplicationServices
+import Carbon
 import CoreGraphics
 import Combine
 import Foundation
 import LocalAuthentication
+import OSLog
 import ServiceManagement
 import TenmakuShared
 
@@ -24,11 +26,15 @@ enum ProtectionState: Equatable {
     case failed(String)
 }
 
+private struct ActiveLockConfiguration: Codable {
+    let inputMode: InputProtectionMode
+}
+
 private let replyTimeoutSeconds = 3.0
+private let serviceLog = Logger(subsystem: "jp.pronama.tenmaku", category: "registration")
 // The keys change before the lock screen is drawn.
 private let lockSettleDuration = Duration.milliseconds(1500)
 private let lockRetryDuration = Duration.seconds(5)
-private let loginWindowFullScreenLayer = 2001
 
 private func testFlag(_ name: String) -> Bool {
     #if TENMAKU_TEST_BUILD
@@ -55,6 +61,7 @@ private final class Once: @unchecked Sendable {
 final class LayerClient {
     private let service: LayerService
     private var connection: NSXPCConnection?
+    private var connectionGeneration = 0
     /// True from the shielding request until release. A disconnect during this interval means the layer is lost.
     private var held = false
     var onLost: (() -> Void)?
@@ -66,10 +73,12 @@ final class LayerClient {
     private func proxy(onError: @escaping @Sendable (Error) -> Void) -> ShieldLayer? {
         let connection = connection ?? {
             let new = NSXPCConnection(machServiceName: service.rawValue, options: service.isPrivileged ? .privileged : [])
-            new.remoteObjectInterface = NSXPCInterface(with: ShieldLayer.self)
-            new.setCodeSigningRequirement(sameTeamRequirement)
+            new.remoteObjectInterface = NSXPCInterface(with: service == .cover ? CoverControl.self : ShieldLayer.self)
+            new.setCodeSigningRequirement(service.signingRequirement)
+            connectionGeneration += 1
+            let generation = connectionGeneration
             let lost: @Sendable () -> Void = { [weak self] in
-                Task { @MainActor in self?.connectionLost() }
+                Task { @MainActor in self?.connectionLost(generation: generation) }
             }
             new.interruptionHandler = lost
             new.invalidationHandler = lost
@@ -81,19 +90,22 @@ final class LayerClient {
     }
 
     // Use the disconnect to detect a peer exit because the next call can block until launchd restarts it.
-    private func connectionLost() {
-        guard let lost = connection else { return }
+    private func connectionLost(generation: Int) {
+        guard generation == connectionGeneration, let lost = connection else { return }
         connection = nil
         lost.invalidate()
-        if held {
-            held = false
-            onLost?()
-        }
+        // A disconnect alone does not prove the peer released protection.
+        if held { onLost?() }
     }
 
     /// Take over layers that are still active after the UI restarts.
     func adopt() {
         held = true
+    }
+
+    func resetIdleConnection() {
+        guard !held else { return }
+        connectionLost(generation: connectionGeneration)
     }
 
     func preflight(holdDurations: InputHoldDurations = .standard) async -> String? {
@@ -103,6 +115,22 @@ final class LayerClient {
     func engage(holdDurations: InputHoldDurations = .standard) async -> String? {
         held = true
         return await command { $0.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: $1) }
+    }
+
+    func restoreCover() async -> String? {
+        held = true
+        return await command { layer, reply in
+            guard let cover = layer as? CoverControl else { return reply(LayerFailure.coverFailed.error()) }
+            cover.restoreCover(reply: reply)
+        }
+    }
+
+    func holdForHandoff() async -> Bool? {
+        held = true
+        return await query { layer, reply in
+            guard let cover = layer as? CoverControl else { return reply(false) }
+            cover.holdForHandoff(reply: reply)
+        }
     }
 
     func release(afterSessionLock: Bool = false) async -> String? {
@@ -186,22 +214,31 @@ final class ProtectionController: ObservableObject {
     private var restoring = false
     private var stopping = false
     private var showingUnlockGuide = false
-    private var usesCover = true
+    private let lockRecordURL: URL
+    private var layerRevision = 0
     private var authentication: LAContext?
     // Give each request a unique number so stale or canceled attempts cannot unlock.
     private var unlockRequest = 0
 
-    init() {
+    init(lockRecordURL: URL = URL.applicationSupportDirectory
+        .appendingPathComponent("jp.pronama.tenmaku/active-lock.json")) {
+        self.lockRecordURL = lockRecordURL
         gamma.onLost = { [weak self] in self?.reportDegraded(L10n.protectionGammaLost()) }
         cover.onLost = { [weak self] in self?.reportDegraded(L10n.protectionCoverLost()) }
         for input in inputs.values {
-            input.onLost = { [weak self] in self?.handOffToSessionLock(L10n.protectionInputLost()) }
+            input.onLost = { [weak self] in
+                guard let self else { return }
+                layerRevision += 1
+                handOffToSessionLock(L10n.protectionInputLost())
+            }
         }
     }
 
     /// Clear the locked state while preserving the remaining layers and the unlock signal.
     private func reportDegraded(_ reason: String) {
+        layerRevision += 1
         guard monitor != nil else { return }
+        if case .handingOff = state { return }
         state = .failed(reason)
     }
 
@@ -216,26 +253,33 @@ final class ProtectionController: ObservableObject {
     }
 
     private func waitForSessionLock() async {
-        var lockedAt: ContinuousClock.Instant?
+        var sawLockedSession = false
+        var coveredSince: (layout: LockedScreenLayout, time: ContinuousClock.Instant)?
         var lastRequest = ContinuousClock.now
         while !Task.isCancelled {
             try? await Task.sleep(nanoseconds: 50_000_000)
-            let confirmed = await sessionConfirmedLocked()
             if Task.isCancelled { return }
             let now = ContinuousClock.now
-            if confirmed {
-                let since = lockedAt ?? now
-                lockedAt = since
-                if now - since >= lockSettleDuration, loginWindowIsOpaque {
-                    stop(afterSessionLock: true)
-                    return
+            if canConfirmSessionLock {
+                sawLockedSession = true
+                if let layout = LockedScreenLayout.confirmed() {
+                    if let coveredSince, coveredSince.layout == layout {
+                        if now - coveredSince.time >= lockSettleDuration {
+                            stop(handingOff: layout)
+                            return
+                        }
+                    } else {
+                        coveredSince = (layout, now)
+                    }
+                } else {
+                    coveredSince = nil
                 }
-            } else if lockedAt != nil, activeInputs.contains(where: \.isHeld) {
+            } else if sawLockedSession, currentSessionIsLocked() == false, activeInputs.contains(where: \.isHeld) {
                 // The user returned before lock confirmation. Treat this as a return from the lock screen and start over with Touch ID.
                 watch()
                 return
             } else {
-                lockedAt = nil
+                coveredSince = nil
                 if now - lastRequest >= lockRetryDuration {
                     requestSessionLock()
                     lastRequest = now
@@ -244,25 +288,16 @@ final class ProtectionController: ObservableObject {
         }
     }
 
-    private func sessionConfirmedLocked() async -> Bool {
-        guard !testFlag("hide-lock"), currentSessionIsLocked() == true else { return false }
-        let uid = testFlag("foreign-session") ? getuid() + 1 : getuid()
-        return consoleSessionIsLocked(uid: uid) == true
-    }
-
-    private var loginWindowIsOpaque: Bool {
-        guard let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] else { return false }
-        return windows.contains {
-            $0[kCGWindowOwnerName as String] as? String == "loginwindow"
-                && $0[kCGWindowLayer as String] as? Int == loginWindowFullScreenLayer
-                && $0[kCGWindowAlpha as String] as? Double == 1
-        }
+    private var canConfirmSessionLock: Bool {
+        !testFlag("hide-lock") && !testFlag("foreign-session") && sessionLockIsConfirmed()
     }
 
     /// After restarting the UI, read the active layers again. Startup leaves protection in place.
     func restoreIfEngaged() {
         guard !restoring, monitor == nil, state == .idle else { return }
         restoring = true
+        let configuration = (try? Data(contentsOf: lockRecordURL))
+            .flatMap { try? JSONDecoder().decode(ActiveLockConfiguration.self, from: $0) }
         let agents = (LayerService.agents + [.sessionInput]).map { SMAppService.agent(plistName: $0.plistName) }
         // Keep the launchd registration current if an app update moves the executable.
         agents.filter { $0.status == .enabled }.forEach { try? $0.register() }
@@ -271,14 +306,18 @@ final class ProtectionController: ObservableObject {
         let coverRegistered = SMAppService.agent(plistName: LayerService.cover.plistName).status == .enabled
         Task {
             defer { restoring = false }
+            let revision = layerRevision
+            if gammaRegistered { gamma.adopt() }
+            if coverRegistered { cover.adopt() }
             let gammaEngaged = gammaRegistered ? await gamma.isEngaged() : false
-            let coverEngaged = coverRegistered ? await cover.isEngaged() : false
+            var coverEngaged = coverRegistered ? await cover.isEngaged() : false
             let gammaHeld = gammaRegistered ? await gamma.hasProtection() : false
             let coverHeld = coverRegistered ? await cover.hasProtection() : false
             var inputUnknown = false
             var inputUnhealthy = false
             for mode in registeredInputs {
                 let input = inputs[mode]!
+                input.adopt()
                 let engaged = await input.isEngaged()
                 let held = await input.hasProtection()
                 if held != false || engaged != false {
@@ -288,13 +327,24 @@ final class ProtectionController: ObservableObject {
                 if engaged == nil || held == nil { inputUnknown = true }
                 if held == true && engaged != true { inputUnhealthy = true }
             }
-            guard gammaHeld != false || coverHeld != false || !activeInputs.isEmpty else { return }
-            if gammaHeld != false { gamma.adopt() }
-            if coverHeld != false { cover.adopt() }
-            usesCover = coverHeld != false
-            if inputUnknown || gammaEngaged == nil || coverEngaged == nil || gammaHeld == nil || coverHeld == nil {
+            guard gammaHeld != false || coverHeld != false || !activeInputs.isEmpty || revision != layerRevision else {
+                clearLockRecord()
+                if gammaRegistered, coverRegistered {
+                    _ = await prepareGammaService()
+                }
+                return
+            }
+            if coverRegistered, coverHeld == false {
+                if await cover.restoreCover() == nil { coverEngaged = await cover.isEngaged() }
+            }
+            if let mode = configuration?.inputMode, let expected = inputs[mode],
+               !activeInputs.contains(where: { $0 === expected }) {
+                activeInputs.append(expected)
+                inputUnhealthy = true
+            }
+            if revision != layerRevision || inputUnknown || gammaEngaged == nil || coverEngaged == nil || gammaHeld == nil || coverHeld == nil {
                 state = .failed(L10n.protectionStateUnknown())
-            } else if currentSessionIsLocked() == true {
+            } else if currentSessionIsLocked() != false {
                 state = .interrupted
             } else if activeInputs.isEmpty || inputUnhealthy {
                 state = .failed(L10n.protectionInputLost())
@@ -305,6 +355,15 @@ final class ProtectionController: ObservableObject {
             }
             watch()
         }
+    }
+
+    private func saveLockRecord(_ configuration: ActiveLockConfiguration) throws {
+        try FileManager.default.createDirectory(at: lockRecordURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONEncoder().encode(configuration).write(to: lockRecordURL, options: .atomic)
+    }
+
+    private func clearLockRecord() {
+        try? FileManager.default.removeItem(at: lockRecordURL)
     }
 
     private func inputService(_ mode: InputProtectionMode) -> SMAppService {
@@ -345,19 +404,53 @@ final class ProtectionController: ObservableObject {
         return failure.map { L10n.protectionRegistrationFailed($0.localizedDescription) }
     }
 
+    private func gammaHealthAvailable() async -> Bool {
+        let connection = NSXPCConnection(machServiceName: gammaHealthMachService)
+        connection.remoteObjectInterface = NSXPCInterface(with: GammaHealth.self)
+        connection.setCodeSigningRequirement(LayerService.gamma.signingRequirement)
+        connection.resume()
+        let available = await withCheckedContinuation { continuation in
+            let once = Once()
+            let finish: @Sendable (Bool) -> Void = { available in
+                if once.claim() { continuation.resume(returning: available) }
+            }
+            guard let health = connection.remoteObjectProxyWithErrorHandler({ _ in finish(false) }) as? GammaHealth else {
+                finish(false)
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + replyTimeoutSeconds) { finish(false) }
+            health.sample { _, _ in finish(true) }
+        }
+        connection.invalidate()
+        return available
+    }
+
+    private func prepareGammaService() async -> String? {
+        if await gammaHealthAvailable() { return nil }
+        // Unregistering stops the process. Update the registration only after confirming that no layer is shielding the displays.
+        guard await gamma.hasProtection() == false, await cover.hasProtection() == false else {
+            return L10n.errorCoverFailed()
+        }
+        let service = SMAppService.agent(plistName: LayerService.gamma.plistName)
+        if service.status == .enabled {
+            gamma.resetIdleConnection()
+            do {
+                try await service.unregister()
+            } catch {
+                return L10n.protectionRegistrationFailed(error.localizedDescription)
+            }
+        }
+        if let reason = registrationFailure(service) { return reason }
+        guard await gammaHealthAvailable() else { return L10n.errorCoverFailed() }
+        serviceLog.notice("Refreshed the gamma agent registration and verified its health service")
+        return nil
+    }
+
     /// Report missing prerequisites that can be checked before changing the displays.
     private func preflightFailure(inputMode: InputProtectionMode) -> String? {
-        var count: UInt32 = 0
-        guard CGGetOnlineDisplayList(0, nil, &count) == .success, count > 0 else {
-            return L10n.protectionDisplaysUnknown()
-        }
-        var displays = [CGDirectDisplayID](repeating: 0, count: Int(count))
-        guard CGGetOnlineDisplayList(count, &displays, &count) == .success else {
-            return L10n.protectionDisplaysUnknown()
-        }
-        if displays.prefix(Int(count)).contains(where: { CGDisplayIsInMirrorSet($0) != 0 }) {
-            return L10n.protectionMirroredStart()
-        }
+        if let reason = recoveryPreflightFailure(inputMode: inputMode) { return reason }
+        guard let isMirrored else { return L10n.protectionDisplaysUnknown() }
+        if isMirrored { return L10n.protectionMirroredStart() }
         for service in LayerService.agents {
             if let reason = registrationFailure(.agent(plistName: service.plistName)) { return reason }
         }
@@ -369,8 +462,22 @@ final class ProtectionController: ObservableObject {
         return nil
     }
 
-    private var canStart: Bool {
+    private func recoveryPreflightFailure(inputMode: InputProtectionMode) -> String? {
+        guard LAContext().canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else {
+            return L10n.protectionTouchIdRequired()
+        }
+        if inputMode == .eventTap, IsSecureEventInputEnabled() {
+            return L10n.errorSecureEventInput()
+        }
+        return nil
+    }
+
+    var canQuit: Bool {
         !restoring && !stopping && !showingUnlockGuide && monitor == nil && (state == .idle || isFailed)
+    }
+
+    private var canStart: Bool {
+        canQuit
     }
 
     func start() {
@@ -391,34 +498,76 @@ final class ProtectionController: ObservableObject {
             state = .failed(L10n.errorInvalidUnlockHold())
             return
         }
+        let mode = InputProtectionMode.selected
         showingUnlockGuide = true
-        let confirmed = UnlockGuide.confirmIfNeeded(holdDurations: holdDurations)
+        let confirmed = UnlockGuide.confirmIfNeeded(holdDurations: holdDurations, inputMode: mode)
         showingUnlockGuide = false
         // State can change asynchronously while the modal is open, for example during restoration.
         guard confirmed, canStart else { return }
-        let mode = InputProtectionMode.selected
         if let reason = preflightFailure(inputMode: mode) {
             state = .failed(reason)
             return
         }
-        usesCover = UserDefaults.standard.string(forKey: DefaultsKey.shieldMode) != ShieldMode.gammaOnly.rawValue
         unlockFailure = nil
         let input = inputs[mode]!
         activeInputs = [input]
         state = .starting
         Task {
+            if let reason = await prepareGammaService() {
+                activeInputs = []
+                state = .failed(reason)
+                return
+            }
             if let reason = await input.preflight(holdDurations: holdDurations) {
+                activeInputs = []
                 state = .failed(reason)
                 return
             }
             // Wait for the startup animation before shielding the physical displays.
             await onBeforeEngage?()
-            // Apply the remaining layers after a partial failure. Continue to the input layer so it can receive an unlock request.
-            let gammaFailure = await gamma.engage()
-            let coverFailure = usesCover ? await cover.engage() : nil
-            let inputFailure = await input.engage(holdDurations: holdDurations)
-            if let reason = gammaFailure ?? coverFailure ?? inputFailure {
+            if let reason = recoveryPreflightFailure(inputMode: mode) {
+                activeInputs = []
                 state = .failed(reason)
+                return
+            }
+            do {
+                try saveLockRecord(ActiveLockConfiguration(inputMode: mode))
+            } catch {
+                state = .failed(L10n.protectionStateUnknown())
+                activeInputs = []
+                return
+            }
+            let revision = layerRevision
+            // Wait for the monitor to respond before changing gamma or input.
+            if let reason = await cover.engage() {
+                if await cover.hasProtection() == false {
+                    activeInputs = []
+                    clearLockRecord()
+                    state = .failed(reason)
+                } else {
+                    // Let the user hold a key to request authentication even if the black windows are already visible.
+                    _ = await input.engage(holdDurations: holdDurations)
+                    state = .failed(reason)
+                    watch()
+                }
+                return
+            }
+            // Continue to the input layer if gamma fails so the user can request unlock while the black windows are visible.
+            let gammaFailure = await gamma.engage()
+            let inputFailure = await input.engage(holdDurations: holdDurations)
+            let inputEngaged = await input.isEngaged()
+            let gammaEngaged = await gamma.isEngaged()
+            let coverEngaged = await cover.isEngaged()
+            if let reason = gammaFailure ?? inputFailure {
+                state = .failed(reason)
+            } else if inputEngaged != true {
+                state = .failed(L10n.protectionInputLost())
+            } else if let reason = degradation(gamma: gammaEngaged == true, cover: coverEngaged == true) {
+                state = .failed(reason)
+            } else if revision != layerRevision {
+                state = .failed(L10n.protectionStateUnknown())
+            } else if currentSessionIsLocked() != false {
+                state = .interrupted
             } else {
                 state = .shielded
             }
@@ -494,42 +643,63 @@ final class ProtectionController: ObservableObject {
         authentication = nil
     }
 
-    func stop(afterSessionLock: Bool = false) {
+    func stop(handingOff layout: LockedScreenLayout? = nil) {
         guard !stopping else { return }
         stopping = true
         monitor?.cancel()
         monitor = nil
         cancelAuthentication()
         Task {
-            var inputFailure: String?
-            for input in activeInputs {
-                let failure = await input.release(afterSessionLock: afterSessionLock)
-                if inputFailure == nil { inputFailure = failure }
-            }
-            if let inputFailure {
-                stopping = false
-                state = .failed(inputFailure)
-                watch()
-                return
-            }
-            if !afterSessionLock, currentSessionIsLocked() != false {
-                stopping = false
-                state = .interrupted
-                watch()
-                return
-            }
-            clearStaleButtons()
-            let coverFailure = usesCover ? await cover.release() : nil
-            let gammaFailure = await gamma.release()
+            let failure = await releaseProtection(handingOff: layout)
             stopping = false
-            if let reason = inputFailure ?? coverFailure ?? gammaFailure {
+            if let reason = failure {
                 state = .failed(reason)
                 watch()
             } else {
                 activeInputs = []
+                clearLockRecord()
                 state = .idle
             }
         }
+    }
+
+    private func releaseProtection(handingOff layout: LockedScreenLayout?) async -> String? {
+        if let layout {
+            if let failure = await confirmHandoffCover(layout) { return failure }
+            for layer in activeInputs + [gamma, cover] where layer.isHeld {
+                if layer === gamma, let failure = await confirmHandoffCover(layout) { return failure }
+                guard canConfirmSessionLock, LockedScreenLayout.confirmed() == layout else {
+                    return L10n.errorSessionLockUnconfirmed()
+                }
+                if let failure = await layer.release(afterSessionLock: true) { return failure }
+            }
+            return nil
+        }
+
+        for input in activeInputs {
+            if let failure = await input.release() { return failure }
+        }
+        guard currentSessionIsLocked() == false else { return L10n.errorSessionLockUnconfirmed() }
+        clearStaleButtons()
+        if let failure = await cover.release() { return failure }
+        if let failure = await gamma.release(), await gamma.hasProtection() != false {
+            // Resume monitoring the emergency cover until gamma restoration can be confirmed.
+            _ = await cover.restoreCover()
+            return failure
+        }
+        return nil
+    }
+
+    private func confirmHandoffCover(_ layout: LockedScreenLayout) async -> String? {
+        let deadline = ContinuousClock.now + .seconds(1)
+        while canConfirmSessionLock, LockedScreenLayout.confirmed() == layout {
+            let covered = await cover.holdForHandoff()
+            guard canConfirmSessionLock, LockedScreenLayout.confirmed() == layout else { break }
+            if covered == true { return nil }
+            if covered == nil || ContinuousClock.now >= deadline { return L10n.protectionCoverLost() }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return L10n.errorSessionLockUnconfirmed()
     }
 
     private var isFailed: Bool {
@@ -542,35 +712,25 @@ final class ProtectionController: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 if Task.isCancelled { return }
+                let revision = layerRevision
                 let gammaEngaged = await gamma.isEngaged()
-                let coverEngaged = usesCover ? await cover.isEngaged() : false
+                let coverEngaged = await cover.isEngaged()
                 var inputStates: [Bool?] = []
                 for input in activeInputs { inputStates.append(await input.isEngaged()) }
                 if Task.isCancelled { return }
-                let locked = currentSessionIsLocked() == true && !testFlag("hide-lock")
-                // Ignore key presses on the lock screen when checking for an unlock request.
-                for input in activeInputs {
-                    if await input.takeUnlockRequest(), !locked { requestUnlock() }
-                }
-                if locked { cancelAuthentication() }
-                // This fallback for unavailable Touch ID requires someone to hold Esc.
-                for input in activeInputs {
-                    if await input.takeEscapeRequest(), locked || unlockFailure != nil {
-                        handOffToSessionLock(L10n.protectionEscapeHeld())
-                        return
-                    }
-                }
-                if Task.isCancelled { return }
+                if revision != layerRevision { continue }
                 if gammaEngaged == false && coverEngaged == false && inputStates.allSatisfy({ $0 == false }) {
                     let gammaHeld = await gamma.hasProtection()
-                    let coverHeld = usesCover ? await cover.hasProtection() : false
+                    let coverHeld = await cover.hasProtection()
                     var inputHeld: [Bool?] = []
                     for input in activeInputs { inputHeld.append(await input.hasProtection()) }
                     if Task.isCancelled { return }
+                    if revision != layerRevision { continue }
                     if gammaHeld == false && coverHeld == false && inputHeld.allSatisfy({ $0 == false }) {
                         monitor = nil
                         cancelAuthentication()
-                        if !isFailed { state = .idle }
+                        clearLockRecord()
+                        if isFailed { onChange?(state) } else { state = .idle }
                         return
                     }
                 }
@@ -578,14 +738,30 @@ final class ProtectionController: ObservableObject {
                     handOffToSessionLock(L10n.protectionInputLost())
                     return
                 }
+                let locked = currentSessionIsLocked() != false && !testFlag("hide-lock")
                 if locked {
+                    cancelAuthentication()
                     if state != .interrupted { state = .interrupted }
-                    continue
-                }
-                if let reason = degradation(gamma: gammaEngaged == true, cover: coverEngaged == true) {
+                } else if authentication == nil, let sessionInput = inputs[.eventTap],
+                          activeInputs.contains(where: { $0 === sessionInput }), IsSecureEventInputEnabled() {
+                    handOffToSessionLock(L10n.errorSecureEventInput())
+                    return
+                } else if let reason = degradation(gamma: gammaEngaged == true, cover: coverEngaged == true) {
                     if state != .failed(reason) { state = .failed(reason) }
                 } else if state != .shielded {
                     state = .shielded
+                }
+                for input in activeInputs {
+                    let unlock = await input.takeUnlockRequest()
+                    if Task.isCancelled { return }
+                    if unlock, !locked { requestUnlock() }
+
+                    let escape = await input.takeEscapeRequest()
+                    if Task.isCancelled { return }
+                    if escape, locked || unlockFailure != nil {
+                        handOffToSessionLock(L10n.protectionEscapeHeld())
+                        return
+                    }
                 }
             }
         }
@@ -593,17 +769,14 @@ final class ProtectionController: ObservableObject {
     }
 
     private func degradation(gamma: Bool, cover: Bool) -> String? {
+        guard let isMirrored else { return L10n.protectionDisplaysUnknown() }
         if isMirrored { return L10n.protectionMirrored() }
         if !gamma { return L10n.protectionGammaLost() }
-        if usesCover && !cover { return L10n.protectionCoverLost() }
+        if !cover { return L10n.protectionCoverLost() }
         return nil
     }
 
-    private var isMirrored: Bool {
-        var count: UInt32 = 0
-        guard CGGetOnlineDisplayList(0, nil, &count) == .success, count > 0 else { return false }
-        var displays = [CGDirectDisplayID](repeating: 0, count: Int(count))
-        guard CGGetOnlineDisplayList(count, &displays, &count) == .success else { return false }
-        return displays.prefix(Int(count)).contains { CGDisplayIsInMirrorSet($0) != 0 }
+    private var isMirrored: Bool? {
+        onlineDisplayIDs()?.contains { CGDisplayIsInMirrorSet($0) != 0 }
     }
 }

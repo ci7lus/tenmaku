@@ -10,6 +10,8 @@
 	<dict>
 		<key>jp.pronama.tenmaku.gamma</key>
 		<true/>
+		<key>jp.pronama.tenmaku.gamma.health</key>
+		<true/>
 	</dict>
 	<key>LimitLoadToSessionType</key>
 	<string>Aqua</string>

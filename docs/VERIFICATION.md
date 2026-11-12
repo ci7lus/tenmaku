@@ -98,6 +98,55 @@ The gamma process kept all gamma values at zero on every display. The overlay pr
 - In another setup, gamma returned to its original values about 0.035 seconds after removal. The reason for the difference is unknown.
 - The gamma process did not receive reconfiguration notifications when it ran without `NSApplication`. The product needs to receive these notifications.
 
+#### Locking macOS at the start of reconfiguration with gamma alone
+
+Codex took measurements on 2026-11-12 while the user handled the cable and watched the physical displays. The MacBookPro18,3 ran macOS 27.2 (26B123) with the built-in display and a PHL 279E1 in extended mode. We tested disconnecting and reconnecting the external display once each.
+
+A temporary app displayed a red test pattern and used gamma alone to obscure it. A 20 ms timer continued to read back and reapply gamma. On the first Quartz reconfiguration start notification, the app began sending Control-Command-Q with `CGEventPost`. It used an existing Accessibility permission to send events. Times are relative to the first reconfiguration start notification in each trial. The logs recorded both lock-state indicators and the presence of opaque `loginwindow` windows covering all online displays. This trial covered display behavior only. [Quartz display reconfiguration callback](https://developer.apple.com/documentation/coregraphics/cgdisplayreconfigurationcallback)
+
+| Operation | Log | Visual observation and assessment |
+| --- | --- | --- |
+| Disconnect | The removal notification arrived about 0.08 seconds later. At about 1.90 seconds, the log confirmed the lock screen covered the built-in display. All gamma readbacks on the built-in display were zero up to that point. | The user noticed no exposed content. The trial was inconclusive for brief exposures. |
+| Reconnect | The addition notification arrived about 0.01 seconds later. The log confirmed the macOS lock state after about 0.18 seconds. Gamma became nonzero about 0.78 seconds after the start on the built-in display and 0.79 seconds after the start on the external display. The log confirmed the lock screen covered both displays after about 1.62 seconds. | The user saw content on the built-in display before the lock screen appeared. The trial failed to prevent exposure. |
+
+In both trials, the app began sending events less than 1 ms after the first notification. The interval between the observed gamma change and the confirmed lock screen in the reconnect trial does not establish how long the physical display showed content. We did not record with an external camera.
+
+#### Restoring ColorSync with a black vcgt assigned
+
+Codex took measurements on 2026-11-13 on a MacBookPro18,3 running macOS 27.2 (26B123). The built-in display and the PHL 279E1 stayed connected in extended mode. We copied the external display's default ICC profile and replaced its `vcgt` with a formula whose minimum and maximum outputs were both zero for each RGB channel. We assigned that ICC profile only to the external display with `ColorSyncDeviceSetCustomProfiles`. After confirming that the profile had taken effect, we called `CGDisplayRestoreColorSyncSettings()`. The trial used no API that writes gamma tables directly.
+
+In the final trial, gamma on the external display remained all zero in all 198 readbacks over about 5 seconds after the restore call (1,024 points per RGB channel). All readbacks on the built-in display matched their pre-test values. The user saw the external display stay black and then return to its original image.
+
+The recovery process skipped display API initialization on the first run. We corrected the initialization and reran recovery. In the two trials after the fix, a separate process automatically removed the custom assignment and restored ColorSync after the test process exited. The ICC profiles and gamma on both displays matched their pre-test values.
+
+The display configuration stayed fixed, and we did not record the physical displays. Disconnect and reconnect behavior and brief exposures below the threshold of visual detection remain unverified.
+
+#### Reconnecting the external display with black vcgt assigned to both displays
+
+On 2026-11-13, we tested the same MacBookPro18,3 running macOS 27.2 (26B123) with the built-in display and the PHL 279E1 in extended mode. We created an ICC profile with a black `vcgt` from each display's default ICC profile, assigned them, and confirmed that all gamma values were zero. We did not write gamma directly or explicitly restore ColorSync while observing the displays. Following a spoken cue, the user disconnected and reconnected the video cable once while watching the physical displays.
+
+| Operation | Gamma readback | Visual observation |
+| --- | --- | --- |
+| Disconnect | About 5.2 seconds after the first readback without the external display in the online list, 3,069 of 3,072 points on the built-in display became nonzero. | The user saw content on the built-in display before reconnecting the cable. |
+| Reconnect | Gamma on the built-in display remained nonzero through the end of the trial. Gamma on the external display was all zero in 402 readbacks over about 7 seconds after rediscovery. | Only the built-in display showed content. |
+
+Both displays still had ICC profiles with a black `vcgt` assigned immediately before the end of the trial. In this setup, assigning a black ICC profile alone failed to prevent exposure on the built-in display. The read that first detected the reconnected external display took about 0.23 seconds. We did not record the physical displays. A brief exposure missed by readbacks and visual checks would go undetected.
+
+After the test process exited, a separate process removed the test assignments automatically, starting with the built-in display and then the external display. Readback confirmed that the ICC profiles and gamma on both displays matched their pre-test values.
+
+#### Test Black Windows During Display Reconfiguration
+
+Codex took measurements on 2026-11-13 on the same MacBookPro18,3 running macOS 27.2 (26B123). With the built-in display and the PHL 279E1 in extended mode, the user disconnected and reconnected the external display cable once each. The prototype displayed a red test pattern and used both gamma and black windows at 99.9% opacity. The trial covered display behavior. Input blocking and client interaction were outside its scope.
+
+On the Quartz reconfiguration start notification, the prototype set the windows on connected displays to 100% opacity. It also showed a 100% opaque window on each newly detected display. It checked opacity and bounds using WindowServer information and read back gamma from every display on a 20 ms timer. When gamma readbacks on all displays stayed at zero for 6 seconds with the same display configuration, the prototype restored window opacity to 99.9%.
+
+| Operation | Log | Visual observation |
+| --- | --- | --- |
+| Disconnect | The prototype requested full opacity about 95 ms after the start notification. Gamma on the built-in display became nonzero about 0.35 seconds after the notification. After reapplying gamma, the prototype confirmed all-zero gamma for 6 seconds. | No content was visible on the built-in display. |
+| Reconnect | WindowServer information confirmed opaque windows on both displays about 40 ms after the addition notification. Gamma on both displays became nonzero about 5.4 seconds after the start notification, while the black windows were still present. After reapplying gamma, the prototype restarted the 6-second all-zero check. | No content was visible on either display. |
+
+The trial did not record the reconnected display as it first lit up. Visual checks could miss brief exposures. The A14 result for exposure prevention was inconclusive. After the trial, gamma readbacks confirmed that both displays had returned to nonzero gamma.
+
 ## Physical input
 
 ### Event taps

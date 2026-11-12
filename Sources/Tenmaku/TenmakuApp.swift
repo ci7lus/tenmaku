@@ -29,11 +29,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.show()
         return false
     }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        protection.canQuit ? .terminateNow : .terminateCancel
+    }
 }
 
 enum DefaultsKey {
     static let walkthroughCompleted = "walkthroughCompleted"
-    static let shieldMode = "shieldMode"
     static let unlockHoldSeconds = "unlockHoldSeconds"
     static let escapeHoldSeconds = "escapeHoldSeconds"
 }

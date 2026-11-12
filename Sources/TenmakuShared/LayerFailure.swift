@@ -16,6 +16,9 @@ public enum LayerFailure: Int, CaseIterable, Sendable {
     case inputListenDenied = 12
     case gammaFailed = 13
     case coverFailed = 14
+    case secureEventInput = 15
+    case sessionLockUnconfirmed = 16
+    case inputSessionMismatch = 17
 
     public static let domain = "jp.pronama.tenmaku.layer"
     public static let statusKey = "status"

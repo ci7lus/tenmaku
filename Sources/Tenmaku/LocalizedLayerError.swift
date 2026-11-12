@@ -38,5 +38,11 @@ func localizedLayerError(_ error: NSError, bundle: Bundle = .main, locale: Local
         return L10n.errorGammaFailed(bundle: bundle, locale: locale)
     case .coverFailed:
         return L10n.errorCoverFailed(bundle: bundle, locale: locale)
+    case .secureEventInput:
+        return L10n.errorSecureEventInput(bundle: bundle, locale: locale)
+    case .sessionLockUnconfirmed:
+        return L10n.errorSessionLockUnconfirmed(bundle: bundle, locale: locale)
+    case .inputSessionMismatch:
+        return L10n.errorInputSessionMismatch(bundle: bundle, locale: locale)
     }
 }

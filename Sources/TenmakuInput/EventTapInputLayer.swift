@@ -1,4 +1,5 @@
 import ApplicationServices
+import Carbon
 import CoreGraphics
 import Foundation
 import IOKit.pwr_mgt
@@ -28,6 +29,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
             }
             if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
             if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
+            if IsSecureEventInputEnabled() { return reply(LayerFailure.secureEventInput.error()) }
             if let failure = permissionFailure() { return reply(failure) }
             // A tap that includes mouse events can still be created without keyboard permissions, with only the key events removed from its mask.
             let keyboardMask = CGEventMask(1) << CGEventType.keyDown.rawValue | CGEventMask(1) << CGEventType.keyUp.rawValue
@@ -52,6 +54,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
             }
             if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
             if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
+            if IsSecureEventInputEnabled() { return reply(LayerFailure.secureEventInput.error()) }
             if let failure = permissionFailure() { return reply(failure) }
             let mask = Self.eventTypes.reduce(CGEventMask(0)) { $0 | CGEventMask(1) << $1.rawValue }
             guard let newTap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
@@ -95,6 +98,9 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
 
     func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
+            if afterSessionLock, LockedScreenLayout.confirmed() == nil {
+                return reply(LayerFailure.sessionLockUnconfirmed.error())
+            }
             stop(afterSessionLock: afterSessionLock)
             guard filter.isDraining else {
                 finishReleases(nil)
@@ -161,8 +167,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         generation += 1
         // The caller retries release after confirming the lock screen is present.
         // After handing off to macOS authentication, discard tracking for any release events that were missed.
-        let confirmedLock = afterSessionLock && currentSessionIsLocked() == true && consoleSessionIsLocked(uid: getuid()) == true
-        filter.release(afterSessionLock: confirmedLock)
+        filter.release(afterSessionLock: afterSessionLock)
         if let assertion = sleepAssertion {
             IOPMAssertionRelease(assertion)
             sleepAssertion = nil

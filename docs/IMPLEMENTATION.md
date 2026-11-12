@@ -7,7 +7,7 @@ A recommendation is a design proposal that verification has yet to confirm. The 
 ## Scope of the first release
 
 - The administrator-privileged helper is optional. On 2026-11-10, the user decided to add a configuration without the helper and document its limitations. See [input control without the helper](HELPERLESS_INPUT.md) for user-level input control, unlock, restoration, and known limitations.
-- Provide settings for gamma with concealment windows and gamma alone. Default to using both.
+- Use gamma alone for concealment during normal operation. Show opaque concealment windows automatically during display reconfiguration and gamma failures.
 - Use Touch ID as the only unlock method. Password unlock (A17 to A19) is outside the scope of the first release.
 - Support built-in displays and extended external displays. Start the lock only when mirroring is inactive.
 - The newest API used determines the minimum supported macOS version. `SMAppService` and `NSXPCConnection.setCodeSigningRequirement` require macOS 13 or later.
@@ -17,10 +17,10 @@ A recommendation is a design proposal that verification has yet to confirm. The 
 | Layer | Method | What causes loss |
 | --- | --- | --- |
 | Gamma | Set every entry in the gamma tables of all target displays to zero with `CGSetDisplayTransferByTable`. Read back every 20 ms and rewrite any table that contains a nonzero value. | The owning process exits, another process that changed gamma exits (which also restores gamma on other displays), or the displays reconfigure. |
-| Concealment windows | Show a full-display black window on each display. Set `sharingType = .none`, opacity to 99.9% (`isOpaque = false`), `ignoresMouseEvents = true`, the level to `.screenSaver`, and the collection behaviors to `.canJoinAllSpaces` and `.fullScreenAuxiliary`. | The owning process exits. |
+| Concealment windows | Show a black window at 100% opacity on each display only during a failure. Use the `.screenSaver` level and display the windows in all Spaces and full-screen apps. Ignore mouse events. | The owning process exits. |
 | Input | The helper seizes physical keyboards and pointing devices with `kIOHIDOptionsTypeSeizeDevice`. Use the registry ID to identify devices that match several criteria as the same device. Exclude devices with a `Transport` of `Virtual`. | The helper exits. |
 
-Keep concealment windows nonopaque. With `isOpaque = true`, windows under the concealment windows disappeared from full-display captures.
+While opaque windows are visible, screen captures may show the windows and control may stop.
 
 If gamma briefly resets during reconfiguration, items stacked above the concealment windows become visible. In a resolution change test, the Touch ID confirmation dialog and mouse pointer appeared for about 140 ms. The concealment windows continued to hide the desktop.
 
@@ -39,7 +39,9 @@ Separate the gamma and concealment window layers into different processes so one
 - Recommendation. Register gamma and concealment windows as agents with `SMAppService.agent` so they run independently of the UI process.
 - Recommendation. Keep lock state in one place outside the UI, including start in progress, locked, unlock in progress, fault, and handoff to the session lock. Have the UI read the state each time it starts (A12 in the specification).
 - Bundle the helper as a separate app inside the main app, for example at `Contents/Library/Helpers/TenmakuHelper.app`. In the daemon configuration file in `Contents/Library/LaunchDaemons/`, point `BundleProgram` to the embedded app's executable.
-- Connect the processes over XPC. Accept signatures only from the same team using `setCodeSigningRequirement` and `setConnectionCodeSigningRequirement`.
+- Connect the processes over XPC. Check signing teams and peer signing identifiers with `setCodeSigningRequirement` and `setConnectionCodeSigningRequirement`. The helper accepts requests to start input blocking from the console user. While input blocking is active, it accepts operations and state queries only from connections matching the initiating user ID and audit session ID.
+- The concealment process monitors the Quartz reconfiguration-start notification and gamma XPC disconnection directly. Prepare hidden black windows in advance for known displays and bring them to the front on notification. Track new displays through Quartz and AppKit configuration change notifications. The read-only gamma XPC service accepts connections from the concealment process and the main app. The gamma process reports how long all displays have been at all zero, based on its readings before rewriting the tables. The monitor polls about every 50 ms and shows the windows if replies stop while monitoring is active. To remove the windows, verify that they cover all displays in the same configuration and that every gamma table has remained all zero for 6 seconds. After an unexpected exit, keep the concealment windows in place and leave gamma reapplication to an explicit action.
+- If an older LaunchAgent remains registered after an update, the app cannot connect to the read-only gamma monitoring service. Before darkening the displays, the main app checks for a response. If there is no response and it confirms that neither gamma nor the black windows are active, it registers the gamma LaunchAgent again.
 
 ## Installation and permissions
 
@@ -58,13 +60,13 @@ Configure normal unlock and Esc hold durations independently. Both range from 1 
 
 ### Start
 
-Check the display configuration and stop if mirroring is active. Then apply gamma, show concealment windows if enabled, and seize input devices in that order. Verify that all layers are in place before reporting the locked state.
+Verify the display configuration, Touch ID availability, and input readiness. In the configuration without the helper, start only if Secure Event Input is inactive. Save the current input method so it can be read after the main app exits. Start monitoring for concealment windows first, then apply gamma and block input in that order. If monitoring resumes for an active lock, show the black windows first. Keep visible windows in place if the first response is interrupted. When starting or restoring a lock, verify monitoring, gamma on all displays, and input blocking before reporting the locked state. Prevent normal quit of the main app while any protection remains.
 
 ### Unlock
 
 1. While locked, the helper receives the physical key. Because it has seized the device, the key never reaches the desktop.
 2. The helper signals the main app. With a fresh `LAContext` for the request, the main app requests `.deviceOwnerAuthenticationWithBiometrics`. Set `localizedFallbackTitle` to an empty string.
-3. After verifying successful authentication for the current request, unblock input, remove the concealment windows, then restore gamma to ColorSync settings with `CGDisplayRestoreColorSyncSettings`.
+3. After verifying successful authentication for the current request, unblock input, stop monitoring and remove the concealment windows, then restore gamma. Verify that monitoring has stopped before restoring ColorSync settings with `CGDisplayRestoreColorSyncSettings`. This keeps black windows from appearing when gamma is restored during a normal unlock.
 
 Without the helper, user-level input control makes the same unlock request. Secure Event Input prevents detection of key holds, so an authorized path such as Codex can also request Touch ID for the current unlock via **Unlock…** in the menu or General settings. Keep protections in place until the user authenticates.
 
@@ -75,10 +77,11 @@ Hand off when the helper stops. If Touch ID is unavailable, such as during `biom
 1. Keep the remaining protections in place and send Control-Command-Q.
 2. Wait for all three conditions.
    1. The main app sees `CGSSessionScreenIsLocked` report a lock in both `IOConsoleUsers` and the `CGSessionCopyCurrentDictionary` result. The app can read `IOConsoleUsers` as the user, independently of the helper's presence or response.
-   2. The full-display `loginwindow` window found through `CGWindowListCopyWindowInfo` has opacity 1. It was at layer 2001 during verification.
-   3. At least 1.5 seconds have passed since condition 1 was met.
-3. Once all three conditions hold, remove gamma and the concealment windows and end the app lock. After the user authenticates with macOS, leave the app unlocked.
-4. Keep the protections in place while any condition is unmet.
+   2. The `loginwindow` window from `CGWindowListCopyWindowInfo` has opacity 1 and covers the bounds of every display. It was at layer 2001 during verification.
+   3. Both conditions hold for 1.5 seconds in the same display configuration.
+3. Verify that opaque black windows cover every display. If handoff is interrupted, keep the windows in place until an unlock request arrives.
+4. Unblock input, restore gamma, and remove the concealment windows in that order. Recheck that the black windows are visible just before restoring gamma. The main app rechecks the macOS lock state and display configuration immediately before each request to remove a protection. Each concealment process also verifies the lock screen when it receives the request. Once all protections are removed, end the app lock. After the user authenticates with macOS, leave the app unlocked.
+5. Keep the remaining protections in place while any verification condition is unmet.
 
 The lock screen became visible after gamma was restored while the session was locked. Whether the app can read the `loginwindow` window owner's name and opacity without Screen Recording permission remains unverified.
 

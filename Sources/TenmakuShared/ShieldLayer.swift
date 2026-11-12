@@ -12,6 +12,7 @@ public enum LayerService: String, Sendable {
     public var plistName: String { rawValue + ".plist" }
 
     public var isPrivileged: Bool { self == .input }
+    public var signingRequirement: String { signingRequirementForBundle(rawValue) }
 }
 
 private let signingTeamRequirement: String? = {
@@ -32,7 +33,19 @@ private let signingTeamRequirement: String? = {
     return expression
 }()
 
-public let sameTeamRequirement = signingTeamRequirement ?? "never"
+private let sameTeamRequirement = signingTeamRequirement ?? "never"
+
+private func signingRequirementForBundle(_ identifier: String) -> String {
+    #"\#(sameTeamRequirement) and identifier "\#(identifier)""#
+}
+
+private let appSigningRequirement = signingRequirementForBundle("jp.pronama.tenmaku")
+public let gammaHealthMachService = LayerService.gamma.rawValue + ".health"
+
+@objc public protocol GammaHealth {
+    /// Return the active state and the system uptime when all gamma values reached zero. A negative value means unconfirmed.
+    func sample(reply: @escaping @Sendable (Bool, Double) -> Void)
+}
 
 // Keep the displays recoverable in test builds that do not yet implement normal unlock.
 public let testAutoReleaseSeconds = 300.0
@@ -72,16 +85,41 @@ public func exitWhenIdle(_ isIdle: @escaping @Sendable () -> Bool) {
     func hasProtection(reply: @escaping @Sendable (Bool) -> Void)
 }
 
+@objc public protocol CoverControl: ShieldLayer {
+    /// If protection is already active, resume gamma monitoring with the black windows visible.
+    func restoreCover(reply: @escaping @Sendable (NSError?) -> Void)
+    /// Keep the black windows visible until release is requested and report whether they cover all current displays.
+    func holdForHandoff(reply: @escaping @Sendable (Bool) -> Void)
+}
+
 public final class LayerListener: NSObject, NSXPCListenerDelegate {
     private let listener: NSXPCListener
-    private let layer: ShieldLayer
+    private let interface: NSXPCInterface
+    private let exportedObject: AnyObject
 
-    public init(service: LayerService, layer: ShieldLayer) {
-        listener = NSXPCListener(machServiceName: service.rawValue)
-        self.layer = layer
+    public convenience init(service: LayerService, layer: ShieldLayer) {
+        self.init(machService: service.rawValue, interface: NSXPCInterface(with: ShieldLayer.self),
+                  object: layer as AnyObject, clientRequirement: appSigningRequirement)
+    }
+
+    public convenience init(cover: CoverControl) {
+        self.init(machService: LayerService.cover.rawValue, interface: NSXPCInterface(with: CoverControl.self),
+                  object: cover as AnyObject, clientRequirement: appSigningRequirement)
+    }
+
+    public convenience init(gammaHealth: GammaHealth) {
+        let cover = LayerService.cover.signingRequirement
+        self.init(machService: gammaHealthMachService, interface: NSXPCInterface(with: GammaHealth.self),
+                  object: gammaHealth as AnyObject, clientRequirement: "(\(cover)) or (\(appSigningRequirement))")
+    }
+
+    private init(machService: String, interface: NSXPCInterface, object: AnyObject, clientRequirement: String) {
+        listener = NSXPCListener(machServiceName: machService)
+        self.interface = interface
+        self.exportedObject = object
         super.init()
         listener.delegate = self
-        listener.setConnectionCodeSigningRequirement(sameTeamRequirement)
+        listener.setConnectionCodeSigningRequirement(clientRequirement)
     }
 
     public func resume() {
@@ -89,8 +127,8 @@ public final class LayerListener: NSObject, NSXPCListenerDelegate {
     }
 
     public func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
-        connection.exportedInterface = NSXPCInterface(with: ShieldLayer.self)
-        connection.exportedObject = layer
+        connection.exportedInterface = interface
+        connection.exportedObject = exportedObject
         connection.resume()
         return true
     }

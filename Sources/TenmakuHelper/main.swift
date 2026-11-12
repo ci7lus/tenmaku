@@ -2,6 +2,7 @@ import Foundation
 import IOKit
 import IOKit.hid
 import IOKit.pwr_mgt
+import SystemConfiguration
 import TenmakuShared
 
 private let seizeOption = IOOptionBits(kIOHIDOptionsTypeSeizeDevice)
@@ -14,11 +15,29 @@ private struct PressedControl: Hashable {
     let usage: UInt32
 }
 
+private struct HelperPeer: Equatable, Sendable {
+    let uid: uid_t
+    let auditSession: Int32
+
+    static var current: Self? {
+        guard let connection = NSXPCConnection.current(),
+              connection.effectiveUserIdentifier != 0,
+              connection.auditSessionIdentifier > 0 else { return nil }
+        return Self(uid: connection.effectiveUserIdentifier, auditSession: connection.auditSessionIdentifier)
+    }
+
+    var isConsoleUser: Bool {
+        var consoleUID = uid_t.max
+        return SCDynamicStoreCopyConsoleUser(nil, &consoleUID, nil) != nil && uid == consoleUID
+    }
+}
+
 final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     // Deduplicate by registry ID because a device can match more than one usage.
     private var seized: [UInt64: IOHIDDevice] = [:]
     private var engaged = false
+    private var owner: HelperPeer?
     private var complete = false
     private var pressed: Set<PressedControl> = []
     private var draining = false
@@ -48,7 +67,8 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
 
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
-        DispatchQueue.main.async { [self] in
+        withAuthorizedPeer(reply: reply, denied: LayerFailure.inputSessionMismatch.error()) { [self] peer in
+            guard peer.isConsoleUser else { return reply(LayerFailure.inputSessionMismatch.error()) }
             guard InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) != nil else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
@@ -67,13 +87,15 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
 
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
-        DispatchQueue.main.async { [self] in
+        withAuthorizedPeer(reply: reply, denied: LayerFailure.inputSessionMismatch.error()) { [self] peer in
+            guard peer.isConsoleUser else { return reply(LayerFailure.inputSessionMismatch.error()) }
             guard let durations = InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
             let devices = physicalDevices()
             guard !devices.isEmpty else { return reply(LayerFailure.inputDevicesMissing.error()) }
             holdDurations = durations
+            owner = peer
             engaged = true
             complete = true
             draining = false
@@ -97,7 +119,11 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
 
     func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
-        DispatchQueue.main.async { [self] in
+        withAuthorizedPeer(reply: reply, denied: LayerFailure.inputSessionMismatch.error()) { [self] peer in
+            guard !isIdle() else { return reply(nil) }
+            if afterSessionLock, consoleSessionIsLocked(uid: peer.uid) != true {
+                return reply(LayerFailure.sessionLockUnconfirmed.error())
+            }
             stop()
             reply(nil)
         }
@@ -108,26 +134,39 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
 
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) {
-        DispatchQueue.main.async { [self] in
+        withAuthorizedPeer(reply: reply, denied: false) { [self] _ in
             reply(unlockRequested)
             unlockRequested = false
         }
     }
 
     func takeEscapeRequest(reply: @escaping @Sendable (Bool) -> Void) {
-        DispatchQueue.main.async { [self] in
+        withAuthorizedPeer(reply: reply, denied: false) { [self] _ in
             reply(escapeRequested)
             escapeRequested = false
         }
     }
 
     func hasProtection(reply: @escaping @Sendable (Bool) -> Void) {
-        DispatchQueue.main.async { [self] in reply(engaged || !seized.isEmpty) }
+        withAuthorizedPeer(reply: reply, denied: false) { [self] _ in reply(!isIdle()) }
     }
 
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {
-        DispatchQueue.main.async { [self] in
+        withAuthorizedPeer(reply: reply, denied: false) { [self] _ in
             reply(engaged && complete && !seized.isEmpty)
+        }
+    }
+
+    private func withAuthorizedPeer<Result: Sendable>(
+        reply: @escaping @Sendable (Result) -> Void,
+        denied: Result,
+        _ perform: @escaping @Sendable (HelperPeer) -> Void
+    ) {
+        // Read the XPC caller before moving to the main queue.
+        guard let peer = HelperPeer.current else { return reply(denied) }
+        DispatchQueue.main.async { [self] in
+            guard isIdle() || owner == peer else { return reply(denied) }
+            perform(peer)
         }
     }
 
@@ -172,6 +211,8 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private func stop() {
         generation += 1
         engaged = false
+        unlockRequested = false
+        escapeRequested = false
         allowIdleSleep()
         holds.values.forEach { $0.cancel() }
         holds = [:]

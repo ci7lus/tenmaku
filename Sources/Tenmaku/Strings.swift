@@ -19,7 +19,7 @@ enum L10n {
     }
 
     static func errorCoverFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.cover_failed", defaultValue: "Could not show the shielding area on some displays.", bundle: bundle, locale: locale)
+        String(localized: "error.cover_failed", defaultValue: "Could not start monitoring display configuration and gamma.", bundle: bundle, locale: locale)
     }
 
     static func errorGammaFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -74,8 +74,20 @@ enum L10n {
         String(localized: "error.input_release_unconfirmed", defaultValue: "Could not confirm that all keys and mouse buttons were released.", bundle: bundle, locale: locale)
     }
 
+    static func errorInputSessionMismatch(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "error.input_session_mismatch", defaultValue: "This login session cannot control the helper. Return to the session that started the lock.", bundle: bundle, locale: locale)
+    }
+
     static func errorInvalidUnlockHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "error.invalid_unlock_hold", defaultValue: "Set the hold duration between 1 and 30 seconds.", bundle: bundle, locale: locale)
+    }
+
+    static func errorSecureEventInput(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "error.secure_event_input", defaultValue: "While Secure Event Input is active, Tenmaku needs the helper to block keystrokes and detect key holds. Leave the password field or install the helper.", bundle: bundle, locale: locale)
+    }
+
+    static func errorSessionLockUnconfirmed(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "error.session_lock_unconfirmed", defaultValue: "Tenmaku could not verify the macOS lock screen. The remaining protection stays active.", bundle: bundle, locale: locale)
     }
 
     static func errorUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -187,7 +199,7 @@ enum L10n {
     }
 
     static func protectionCoverLost(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.cover_lost", defaultValue: "The display shielding area was lost.", bundle: bundle, locale: locale)
+        String(localized: "protection.cover_lost", defaultValue: "Waiting for display shielding to recover or for the emergency cover monitor to respond.", bundle: bundle, locale: locale)
     }
 
     static func protectionDisplaysUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -234,8 +246,12 @@ enum L10n {
         String(localized: "protection.state_unknown", defaultValue: "Could not verify the lock status.", bundle: bundle, locale: locale)
     }
 
+    static func protectionTouchIdRequired(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "protection.touch_id_required", defaultValue: "Touch ID must be available to start the lock. Set up Touch ID in System Settings or sign in to macOS with your password, then try again.", bundle: bundle, locale: locale)
+    }
+
     static func protectionTouchIdUnavailable(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.touch_id_unavailable", defaultValue: "Touch ID is unavailable. Hold Esc for the configured duration to switch to the macOS lock screen.", bundle: bundle, locale: locale)
+        String(localized: "protection.touch_id_unavailable", defaultValue: "Touch ID is unavailable. Hold Esc to request the macOS lock screen.", bundle: bundle, locale: locale)
     }
 
     static func protectionUnlock(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -246,24 +262,12 @@ enum L10n {
         String(localized: "protection.unlock_reason", defaultValue: "Unlock Tenmaku", bundle: bundle, locale: locale)
     }
 
-    static func settingsDisplayShielding(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.display_shielding", defaultValue: "Operating Mode", bundle: bundle, locale: locale)
-    }
-
     static func settingsEscapeHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "settings.escape_hold", defaultValue: "Esc Hold Duration", bundle: bundle, locale: locale)
     }
 
     static func settingsEscapeHoldMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "settings.escape_hold_message", defaultValue: "How long to hold Esc before switching to the macOS lock screen. Use this when Touch ID is disabled or otherwise unavailable.", bundle: bundle, locale: locale)
-    }
-
-    static func settingsGammaAndCoverMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.gamma_and_cover_message", defaultValue: "Uses display color adjustment (gamma adjustment) and an opaque display layer to keep screen contents hidden.\nThe system does not guarantee that the display layer is excluded from captures. It may appear in captures on future versions of macOS.", bundle: bundle, locale: locale)
-    }
-
-    static func settingsGammaOnlyMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.gamma_only_message", defaultValue: "Uses display color adjustment alone to keep screen contents hidden.\nIf a process that applied the adjustment exits, including another app, or the display configuration changes, the colors may reset and reveal the screen contents.", bundle: bundle, locale: locale)
     }
 
     static func settingsGeneral(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -290,16 +294,12 @@ enum L10n {
         String(localized: "settings.walkthrough", defaultValue: "Getting Started", bundle: bundle, locale: locale)
     }
 
-    static func shieldGammaAndCover(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "shield.gamma_and_cover", defaultValue: "Display Color Adjustment and Shielding Area", bundle: bundle, locale: locale)
-    }
-
-    static func shieldGammaOnly(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "shield.gamma_only", defaultValue: "Display Color Adjustment", bundle: bundle, locale: locale)
-    }
-
     static func unlockEscapeMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock.escape_message", defaultValue: "If you cannot unlock with Touch ID, hold Esc for \(arg1) seconds to switch to the macOS lock screen.", bundle: bundle, locale: locale)
+        String(localized: "unlock.escape_message", defaultValue: "After a failed Touch ID attempt, hold Esc for \(arg1) seconds to request the macOS lock screen.", bundle: bundle, locale: locale)
+    }
+
+    static func unlockSecureEventInput(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "unlock.secure_event_input", defaultValue: "Without the helper, key holds for Touch ID and Esc cannot be detected while Secure Event Input is active, such as in a password field.", bundle: bundle, locale: locale)
     }
 
     static func unlockGuideHideNextTime(bundle: Bundle = .main, locale: Locale = .current) -> String {

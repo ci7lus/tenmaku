@@ -19,13 +19,14 @@ private let statusIconViewBoxSide = 800.0
 private let doorOpening = NSRect(x: 287, y: 112, width: 226, height: 359)
 
 @MainActor
-final class StatusMenu: NSObject {
+final class StatusMenu: NSObject, NSMenuDelegate {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     private let openSettings: () -> Void
     private let protection: ProtectionController
     private let stateItem = NSMenuItem(title: L10n.menuIdle(), action: nil, keyEquivalent: "")
     private let startItem = NSMenuItem(title: L10n.protectionStart(), action: nil, keyEquivalent: "")
     private let unlockItem = NSMenuItem(title: L10n.protectionUnlock(), action: nil, keyEquivalent: "")
+    private let quitItem = NSMenuItem(title: L10n.menuQuit(), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     #if TENMAKU_TEST_BUILD
     private let stopItem = NSMenuItem(title: L10n.menuTestStop(), action: nil, keyEquivalent: "")
     #endif
@@ -58,6 +59,7 @@ final class StatusMenu: NSObject {
 
         let menu = NSMenu()
         menu.autoenablesItems = false
+        menu.delegate = self
 
         stateItem.isEnabled = false
         menu.addItem(stateItem)
@@ -84,12 +86,15 @@ final class StatusMenu: NSObject {
         settings.target = self
         menu.addItem(settings)
 
-        let quit = NSMenuItem(title: L10n.menuQuit(), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        menu.addItem(quit)
+        menu.addItem(quitItem)
 
         item.menu = menu
         protection.onChange = { [weak self] state in self?.apply(state) }
         protection.onBeforeEngage = { [weak self] in await self?.waitForDoorClose() }
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        quitItem.isEnabled = protection.canQuit
     }
 
     private func apply(_ state: ProtectionState) {

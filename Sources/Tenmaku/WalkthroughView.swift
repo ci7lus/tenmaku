@@ -88,7 +88,7 @@ enum WalkthroughStep: Int, CaseIterable {
         case .postEvent:
             L10n.walkthroughLockMessage()
         case .summary:
-            L10n.walkthroughSummaryMessage(unlockHoldSeconds) + "\n**" + L10n.unlockEscapeMessage(escapeHoldSeconds) + "**"
+            L10n.walkthroughSummaryMessage(unlockHoldSeconds) + "\n**" + UnlockGuide.escapeMessage(seconds: escapeHoldSeconds, inputMode: inputMode) + "**"
         }
         return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)

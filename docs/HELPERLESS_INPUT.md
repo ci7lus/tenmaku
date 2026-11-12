@@ -16,7 +16,7 @@ Unprivileged input control uses a session-level event tap. Apple's documentation
 
 The known limitations come from the [verification record](VERIFICATION.md) and its [summary](VERIFICATION_SUMMARY.md).
 
-- While Secure Event Input is active, Tenmaku cannot block physical keystrokes or detect the unlock hold or the Esc fallback. Codex and other clients can choose Unlock… in the menu or General settings to request Touch ID authentication. Tenmaku blocks the physical mouse, so this command requires a client that can still operate the app. The app lock stays active until authentication succeeds.
+- While Secure Event Input is active, Tenmaku cannot block physical keystrokes or detect the unlock hold or the Esc fallback. Tenmaku refuses to start in this state. If Secure Event Input becomes active during the app lock, keep shielding in place and hand off to the macOS lock screen unless Touch ID authentication is in progress. Codex and other clients can use the unlock command in the menu or General settings to request Touch ID authentication. The app lock stays active until authentication succeeds.
 - Some Claude clicks have a PID of zero and are indistinguishable from physical input. Tenmaku blocks those clicks. Support for all Codex and Claude actions without the helper is unverified.
 - Use hardware acceptance tests to assess system keys, dedicated gestures, pointer blocking at the session level, and actions from each client separately.
 

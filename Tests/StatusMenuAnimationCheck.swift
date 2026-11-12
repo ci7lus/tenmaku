@@ -10,6 +10,7 @@ final class ProtectionController {
     var onBeforeEngage: (() async -> Void)?
     var unlockFailure: String?
     var engaged = false
+    var canQuit: Bool { !engaged }
     var canRequestUnlock: Bool { engaged }
     func requestUnlock() {}
     func start() {
