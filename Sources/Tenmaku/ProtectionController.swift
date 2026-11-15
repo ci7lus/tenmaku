@@ -73,7 +73,11 @@ final class LayerClient {
     private func proxy(onError: @escaping @Sendable (Error) -> Void) -> ShieldLayer? {
         let connection = connection ?? {
             let new = NSXPCConnection(machServiceName: service.rawValue, options: service.isPrivileged ? .privileged : [])
-            new.remoteObjectInterface = NSXPCInterface(with: service == .cover ? CoverControl.self : ShieldLayer.self)
+            switch service {
+            case .gamma: new.remoteObjectInterface = NSXPCInterface(with: ShieldLayer.self)
+            case .cover: new.remoteObjectInterface = NSXPCInterface(with: CoverControl.self)
+            case .input, .sessionInput: new.remoteObjectInterface = NSXPCInterface(with: InputControl.self)
+            }
             new.setCodeSigningRequirement(service.signingRequirement)
             connectionGeneration += 1
             let generation = connectionGeneration
@@ -108,13 +112,31 @@ final class LayerClient {
         connectionLost(generation: connectionGeneration)
     }
 
-    func preflight(holdDurations: InputHoldDurations = .standard) async -> String? {
-        await command { $0.preflight(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: $1) }
+    func preflight(holdDurations: InputHoldDurations = .standard, unlockKey: UnlockKey = .any) async -> String? {
+        await command { layer, reply in
+            if unlockKey == .any {
+                layer.preflight(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: reply)
+            } else if let input = layer as? InputControl {
+                input.preflight(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds,
+                                unlockKeyUsage: unlockKey.rawValue, reply: reply)
+            } else {
+                reply(LayerFailure.inputControlStartFailed.error())
+            }
+        }
     }
 
-    func engage(holdDurations: InputHoldDurations = .standard) async -> String? {
+    func engage(holdDurations: InputHoldDurations = .standard, unlockKey: UnlockKey = .any) async -> String? {
         held = true
-        return await command { $0.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: $1) }
+        return await command { layer, reply in
+            if unlockKey == .any {
+                layer.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: reply)
+            } else if let input = layer as? InputControl {
+                input.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds,
+                             unlockKeyUsage: unlockKey.rawValue, reply: reply)
+            } else {
+                reply(LayerFailure.inputControlStartFailed.error())
+            }
+        }
     }
 
     func restoreCover() async -> String? {
@@ -494,13 +516,16 @@ final class ProtectionController: ObservableObject {
         guard canStart else { return }
         let unlockHoldSeconds = UserDefaults.standard.object(forKey: DefaultsKey.unlockHoldSeconds) as? Int ?? defaultUnlockHoldSeconds
         let escapeHoldSeconds = UserDefaults.standard.object(forKey: DefaultsKey.escapeHoldSeconds) as? Int ?? defaultEscapeHoldSeconds
+        let savedKey = UnlockKey(rawValue: UserDefaults.standard.integer(forKey: DefaultsKey.unlockKey)) ?? .any
+        let customEnabled = UserDefaults.standard.object(forKey: DefaultsKey.customUnlockKeyEnabled) as? Bool
+        let unlockKey = UnlockKeyPreference(savedKey: savedKey, customEnabled: customEnabled).effectiveKey
         guard let holdDurations = InputHoldDurations(unlockSeconds: Double(unlockHoldSeconds), escapeSeconds: Double(escapeHoldSeconds)) else {
             state = .failed(L10n.errorInvalidUnlockHold())
             return
         }
         let mode = InputProtectionMode.selected
         showingUnlockGuide = true
-        let confirmed = UnlockGuide.confirmIfNeeded(holdDurations: holdDurations, inputMode: mode)
+        let confirmed = UnlockGuide.confirmIfNeeded(holdDurations: holdDurations, inputMode: mode, unlockKey: unlockKey)
         showingUnlockGuide = false
         // State can change asynchronously while the modal is open, for example during restoration.
         guard confirmed, canStart else { return }
@@ -518,7 +543,7 @@ final class ProtectionController: ObservableObject {
                 state = .failed(reason)
                 return
             }
-            if let reason = await input.preflight(holdDurations: holdDurations) {
+            if let reason = await input.preflight(holdDurations: holdDurations, unlockKey: unlockKey) {
                 activeInputs = []
                 state = .failed(reason)
                 return
@@ -546,7 +571,7 @@ final class ProtectionController: ObservableObject {
                     state = .failed(reason)
                 } else {
                     // Let the user hold a key to request authentication even if the black windows are already visible.
-                    _ = await input.engage(holdDurations: holdDurations)
+                    _ = await input.engage(holdDurations: holdDurations, unlockKey: unlockKey)
                     state = .failed(reason)
                     watch()
                 }
@@ -554,7 +579,7 @@ final class ProtectionController: ObservableObject {
             }
             // Continue to the input layer if gamma fails so the user can request unlock while the black windows are visible.
             let gammaFailure = await gamma.engage()
-            let inputFailure = await input.engage(holdDurations: holdDurations)
+            let inputFailure = await input.engage(holdDurations: holdDurations, unlockKey: unlockKey)
             let inputEngaged = await input.isEngaged()
             let gammaEngaged = await gamma.isEngaged()
             let coverEngaged = await cover.isEngaged()

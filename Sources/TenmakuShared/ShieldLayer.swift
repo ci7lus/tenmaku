@@ -85,6 +85,11 @@ public func exitWhenIdle(_ isIdle: @escaping @Sendable () -> Bool) {
     func hasProtection(reply: @escaping @Sendable (Bool) -> Void)
 }
 
+@objc public protocol InputControl: ShieldLayer {
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void)
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void)
+}
+
 @objc public protocol CoverControl: ShieldLayer {
     /// If protection is already active, resume gamma monitoring with the black windows visible.
     func restoreCover(reply: @escaping @Sendable (NSError?) -> Void)
@@ -105,6 +110,11 @@ public final class LayerListener: NSObject, NSXPCListenerDelegate {
     public convenience init(cover: CoverControl) {
         self.init(machService: LayerService.cover.rawValue, interface: NSXPCInterface(with: CoverControl.self),
                   object: cover as AnyObject, clientRequirement: appSigningRequirement)
+    }
+
+    public convenience init(service: LayerService, input: InputControl) {
+        self.init(machService: service.rawValue, interface: NSXPCInterface(with: InputControl.self),
+                  object: input as AnyObject, clientRequirement: appSigningRequirement)
     }
 
     public convenience init(gammaHealth: GammaHealth) {

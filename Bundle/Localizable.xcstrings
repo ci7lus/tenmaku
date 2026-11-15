@@ -361,6 +361,24 @@
         }
       }
     },
+    "error.invalid_unlock_key": {
+      "comment": "The input process received an unsupported key code.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一般設定で Touch ID の解除キーを選び直してください。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a Touch ID unlock key again in General settings."
+          }
+        }
+      }
+    },
     "error.secure_event_input": {
       "comment": "Secure Event Input was detected while running without the helper.",
       "extractionState": "manual",
@@ -1178,7 +1196,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Escホールド時間"
+            "value": "macOS本体ロック遷移のホールド時間"
           }
         },
         "en": {
@@ -1250,7 +1268,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロック解除ホールド時間"
+            "value": "Touch ID解除開始キーのホールド時間"
           }
         },
         "en": {
@@ -1268,13 +1286,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを解除するには、Esc以外のキーをここで指定した秒数だけ押したあと、Touch IDに触れます。"
+            "value": "キーで指定した秒数だけ長押しすると、Touch IDでの認証が始まります。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To unlock, hold any key except Esc for the number of seconds set here, then touch the Touch ID sensor."
+            "value": "Hold the unlock key for the number of seconds set here to start Touch ID authentication."
           }
         }
       }
@@ -1305,6 +1323,366 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "settings.unlock_key": {
+      "comment": "Key selected in General settings to start Touch ID authentication.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID解除開始キー"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch ID Unlock Key"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_any": {
+      "comment": "Option to allow any eligible key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esc以外の任意のキー"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Any Key Except Esc"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_capture": {
+      "comment": "Button that opens the release key assignment sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーを登録…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record Key…"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_capture_message": {
+      "comment": "Instructions for assigning the release key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登録するキーを1つ押してください。Escを押すとキャンセルします。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press one key to record it. Press Esc to cancel."
+          }
+        }
+      }
+    },
+    "settings.unlock_key_capture_title": {
+      "comment": "Heading of the sheet that waits for the user to press the release key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touch IDの解除キーを登録"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record a Touch ID Unlock Key"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_clear": {
+      "comment": "Button that clears the custom release key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登録を解除"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_code": {
+      "comment": "Virtual key code shown when the current keyboard layout has no display name.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キー %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Key %lld"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_custom": {
+      "comment": "Option to assign a key by pressing it.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "カスタム"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_delete": {
+      "comment": "Display name for the backward Delete key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete（後退）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete (Backspace)"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_down": {
+      "comment": "Display name for an arrow key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下矢印"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Down Arrow"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_keypad": {
+      "comment": "The argument is the name of the numeric keypad key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "テンキーの%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keypad %@"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_left": {
+      "comment": "Display name for an arrow key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左矢印"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left Arrow"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_left_modifier": {
+      "comment": "The argument is the modifier key symbol.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "左側の%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Left %@"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_message": {
+      "comment": "When the release key setting takes effect.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "変更は次のロックから有効です。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes apply the next time you lock."
+          }
+        }
+      }
+    },
+    "settings.unlock_key_return": {
+      "comment": "Display name for the Return key in the main typing area.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_right": {
+      "comment": "Display name for an arrow key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右矢印"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right Arrow"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_right_modifier": {
+      "comment": "The argument is the modifier key symbol.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "右側の%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Right %@"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_space": {
+      "comment": "Display name for the Space key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スペース"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Space"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_unassigned": {
+      "comment": "Custom mode with no key set.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未設定（Esc以外の任意のキー）"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unassigned (Any Key Except Esc)"
+          }
+        }
+      }
+    },
+    "settings.unlock_key_up": {
+      "comment": "Display name for an arrow key.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上矢印"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up Arrow"
           }
         }
       }
@@ -1419,6 +1797,24 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "unlock_guide.selected_key_message": {
+      "comment": "The arguments are the display name of the key and the hold duration with its unit.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ロックを解除するには、%@キーを%@間押し続け、音が鳴ったらTouch IDに触れてください。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To unlock, hold %@ for %@. When you hear the sound, touch the Touch ID sensor."
           }
         }
       }
@@ -1657,32 +2053,20 @@
         }
       }
     },
-    "walkthrough.summary_message": {
-      "comment": "The argument is the configured hold duration for normal release in seconds. The Esc instructions follow in bold.",
+    "walkthrough.start_message": {
+      "comment": "Instructions for starting after setup.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "メニューのアイコンからロックを開始します。\n解除するときは、Esc以外のキーを長押し（%lld秒）して、Touch IDに触れます。"
+            "value": "メニューのアイコンからロックを開始します。"
           }
         },
         "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc for %lld second, then touch the Touch ID sensor."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc for %lld seconds, then touch the Touch ID sensor."
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the menu bar icon to lock."
           }
         }
       }

@@ -77,18 +77,25 @@ enum WalkthroughStep: Int, CaseIterable {
         }
     }
 
-    func message(inputMode: InputProtectionMode, unlockHoldSeconds: Int, escapeHoldSeconds: Int) -> AttributedString {
-        let text = switch self {
+    func message(inputMode: InputProtectionMode, unlockHoldSeconds: Int, escapeHoldSeconds: Int, unlockKey: UnlockKey) -> AttributedString {
+        let text: String
+        switch self {
         case .welcome:
-            L10n.walkthroughWelcomeMessage()
+            text = L10n.walkthroughWelcomeMessage()
         case .helper:
-            L10n.walkthroughHelperMessage()
+            text = L10n.walkthroughHelperMessage()
         case .inputMonitoring:
-            inputMode.permissionMessage
+            text = inputMode.permissionMessage
         case .postEvent:
-            L10n.walkthroughLockMessage()
+            text = L10n.walkthroughLockMessage()
         case .summary:
-            L10n.walkthroughSummaryMessage(unlockHoldSeconds) + "\n**" + UnlockGuide.escapeMessage(seconds: escapeHoldSeconds, inputMode: inputMode) + "**"
+            let unlock = UnlockGuide.touchIDMessage(seconds: unlockHoldSeconds, unlockKey: unlockKey)
+            let escape = UnlockGuide.escapeMessage(seconds: escapeHoldSeconds, inputMode: inputMode)
+            var summary = AttributedString(L10n.walkthroughStartMessage() + "\n" + unlock + "\n")
+            var escapeText = AttributedString(escape)
+            escapeText.inlinePresentationIntent = .stronglyEmphasized
+            summary.append(escapeText)
+            return summary
         }
         return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
@@ -118,6 +125,8 @@ enum WalkthroughStep: Int, CaseIterable {
 
 struct WalkthroughView: View {
     @AppStorage(DefaultsKey.walkthroughCompleted) private var completed = false
+    @AppStorage(DefaultsKey.unlockKey) private var unlockKey = UnlockKey.any
+    @AppStorage(DefaultsKey.customUnlockKeyEnabled) private var customUnlockKeyEnabled: Bool?
     @AppStorage(DefaultsKey.unlockHoldSeconds) private var unlockHoldSeconds = defaultUnlockHoldSeconds
     @AppStorage(DefaultsKey.escapeHoldSeconds) private var escapeHoldSeconds = defaultEscapeHoldSeconds
     @State private var inputMode: InputProtectionMode = .selected
@@ -131,7 +140,9 @@ struct WalkthroughView: View {
                 header
                 Text(step == .inputMonitoring ? inputMode.permissionTitle : step.title)
                     .font(.title2.weight(.semibold))
-                Text(step.message(inputMode: inputMode, unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds))
+                Text(step.message(inputMode: inputMode, unlockHoldSeconds: unlockHoldSeconds,
+                                  escapeHoldSeconds: escapeHoldSeconds,
+                                  unlockKey: UnlockKeyPreference(savedKey: unlockKey, customEnabled: customUnlockKeyEnabled).effectiveKey))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

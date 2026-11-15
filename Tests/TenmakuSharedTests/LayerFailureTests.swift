@@ -76,11 +76,41 @@ final class LayerFailureTests: XCTestCase {
         wait(for: [handoff, protection], timeout: 5)
         withExtendedLifetime(responder) {}
     }
+
+    func testSelectedKeyReachesInputPreflightOverXPC() throws {
+        let responder = FailureResponder(interface: NSXPCInterface(with: InputControl.self))
+        let listener = NSXPCListener.anonymous()
+        listener.delegate = responder
+        listener.resume()
+        let connection = NSXPCConnection(listenerEndpoint: listener.endpoint)
+        connection.remoteObjectInterface = NSXPCInterface(with: InputControl.self)
+        connection.resume()
+        defer {
+            connection.invalidate()
+            listener.invalidate()
+        }
+        let received = expectation(description: "Receive the configured release key over XPC")
+        let input = try XCTUnwrap(connection.remoteObjectProxyWithErrorHandler { error in
+            XCTFail("XPC: \(error)")
+        } as? InputControl)
+        input.preflight(unlockHoldSeconds: 7, escapeHoldSeconds: 3, unlockKeyUsage: UnlockKey.space.rawValue) { error in
+            XCTAssertNil(error)
+            received.fulfill()
+        }
+        wait(for: [received], timeout: 5)
+        withExtendedLifetime(responder) {}
+    }
 }
 
-private final class FailureResponder: NSObject, NSXPCListenerDelegate, CoverControl {
+private final class FailureResponder: NSObject, NSXPCListenerDelegate, CoverControl, InputControl {
+    private let interface: NSXPCInterface
+
+    init(interface: NSXPCInterface = NSXPCInterface(with: CoverControl.self)) {
+        self.interface = interface
+    }
+
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
-        connection.exportedInterface = NSXPCInterface(with: CoverControl.self)
+        connection.exportedInterface = interface
         connection.exportedObject = self
         connection.resume()
         return true
@@ -89,7 +119,16 @@ private final class FailureResponder: NSObject, NSXPCListenerDelegate, CoverCont
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         reply(LayerFailure.inputMonitoringDenied.error(status: -536870174))
     }
+
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
+        XCTAssertEqual(unlockHoldSeconds, 7)
+        XCTAssertEqual(escapeHoldSeconds, 3)
+        XCTAssertEqual(unlockKeyUsage, UnlockKey.space.rawValue)
+        reply(nil)
+    }
+
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
     func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }
     func takeUnlockRequest(reply: @escaping @Sendable (Bool) -> Void) { reply(false) }

@@ -9,11 +9,12 @@ enum UnlockGuide {
     static func confirmIfNeeded(
         holdDurations: InputHoldDurations,
         inputMode: InputProtectionMode,
+        unlockKey: UnlockKey = .any,
         defaults: UserDefaults = .standard,
         present: (@MainActor (InputHoldDurations) -> Decision)? = nil
     ) -> Bool {
         if defaults.bool(forKey: suppressionKey) { return true }
-        let decision = present?(holdDurations) ?? show(holdDurations: holdDurations, inputMode: inputMode)
+        let decision = present?(holdDurations) ?? show(holdDurations: holdDurations, inputMode: inputMode, unlockKey: unlockKey)
         defaults.set(decision.hideNextTime, forKey: suppressionKey)
         return decision.startLock
     }
@@ -23,11 +24,16 @@ enum UnlockGuide {
         return inputMode == .eventTap ? message + "\n" + L10n.unlockSecureEventInput() : message
     }
 
-    private static func show(holdDurations: InputHoldDurations, inputMode: InputProtectionMode) -> Decision {
+    nonisolated static func touchIDMessage(seconds: Int, unlockKey: UnlockKey) -> String {
+        if unlockKey == .any { return L10n.unlockGuideMessage(seconds) }
+        return L10n.unlockGuideSelectedKeyMessage(unlockKey.title, L10n.settingsUnlockHoldSeconds(seconds))
+    }
+
+    private static func show(holdDurations: InputHoldDurations, inputMode: InputProtectionMode, unlockKey: UnlockKey) -> Decision {
         let alert = NSAlert()
         alert.alertStyle = .informational
         alert.messageText = L10n.unlockGuideTitle()
-        alert.informativeText = L10n.unlockGuideMessage(Int(holdDurations.unlockSeconds))
+        alert.informativeText = touchIDMessage(seconds: Int(holdDurations.unlockSeconds), unlockKey: unlockKey)
             + "\n\n" + escapeMessage(seconds: Int(holdDurations.escapeSeconds), inputMode: inputMode)
         alert.addButton(withTitle: L10n.protectionStart())
         alert.addButton(withTitle: L10n.commonCancel()).keyEquivalent = "\u{1b}"

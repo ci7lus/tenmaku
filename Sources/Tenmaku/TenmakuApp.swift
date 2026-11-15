@@ -38,5 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 enum DefaultsKey {
     static let walkthroughCompleted = "walkthroughCompleted"
     static let unlockHoldSeconds = "unlockHoldSeconds"
+    static let unlockKey = "unlockKey"
+    static let customUnlockKeyEnabled = "customUnlockKeyEnabled"
     static let escapeHoldSeconds = "escapeHoldSeconds"
 }

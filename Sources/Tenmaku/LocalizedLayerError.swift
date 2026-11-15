@@ -30,6 +30,8 @@ func localizedLayerError(_ error: NSError, bundle: Bundle = .main, locale: Local
         return L10n.errorInputReleaseUnconfirmed(bundle: bundle, locale: locale)
     case .invalidUnlockHold:
         return L10n.errorInvalidUnlockHold(bundle: bundle, locale: locale)
+    case .invalidUnlockKey:
+        return L10n.errorInvalidUnlockKey(bundle: bundle, locale: locale)
     case .inputAccessibilityDenied:
         return L10n.errorInputAccessibilityDenied(bundle: bundle, locale: locale)
     case .inputListenDenied:

@@ -9,6 +9,20 @@ struct UnlockGuideTests {
     private let domain = "jp.pronama.tenmaku.unlock-guide-test.\(UUID().uuidString)"
 
     @Test
+    func customWithoutCapturedKeyUsesAnyKey() {
+        let preference = UnlockKeyPreference(savedKey: .any, customEnabled: true)
+        #expect(preference.isCustom)
+        #expect(preference.effectiveKey == .any)
+    }
+
+    @Test
+    func capturedKeyIsAppliedOnlyInCustomMode() {
+        #expect(UnlockKeyPreference(savedKey: .space, customEnabled: true).effectiveKey == .space)
+        #expect(UnlockKeyPreference(savedKey: .space, customEnabled: false).effectiveKey == .any)
+        #expect(UnlockKeyPreference(savedKey: .space, customEnabled: nil).effectiveKey == .space)
+    }
+
+    @Test
     func presentsAgainWhenSuppressionIsOff() throws {
         let defaults = try #require(UserDefaults(suiteName: domain))
         defer { defaults.removePersistentDomain(forName: domain) }

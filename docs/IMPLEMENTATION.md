@@ -58,6 +58,8 @@ Separate the gamma and concealment window layers into different processes so one
 
 Configure normal unlock and Esc hold durations independently. Both range from 1 to 30 seconds. Normal unlock defaults to 5 seconds and Esc to 10 seconds. Pass both durations in the preflight and apply XPC requests. The input layer adopts them on apply. Preflight leaves the active settings in place.
 
+Read the custom unlock key in the registration dialog in settings. Convert a virtual key code that both input methods can match to a HID usage ID and save it. Pass the HID usage ID in the preflight and apply XPC requests only if a custom key is enabled and registered. Match the HID usage ID in the helper and the corresponding virtual key code in the event tap. Block and track presses and releases of other physical keys as well.
+
 ### Start
 
 Verify the display configuration, Touch ID availability, and input readiness. In the configuration without the helper, start only if Secure Event Input is inactive. Save the current input method so it can be read after the main app exits. Start monitoring for concealment windows first, then apply gamma and block input in that order. If monitoring resumes for an active lock, show the black windows first. Keep visible windows in place if the first response is interrupted. When starting or restoring a lock, verify monitoring, gamma on all displays, and input blocking before reporting the locked state. Prevent normal quit of the main app while any protection remains.

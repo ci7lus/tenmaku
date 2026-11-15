@@ -32,7 +32,7 @@ private struct HelperPeer: Equatable, Sendable {
     }
 }
 
-final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
+final class InputLayer: NSObject, InputControl, @unchecked Sendable {
     private let manager = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
     // Deduplicate by registry ID because a device can match more than one usage.
     private var seized: [UInt64: IOHIDDevice] = [:]
@@ -45,6 +45,7 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     private var escapeRequested = false
     private var holds: [PressedControl: DispatchWorkItem] = [:]
     private var holdDurations = InputHoldDurations.standard
+    private var unlockKey = UnlockKey.any
     private var generation = 0
     private var sleepAssertion: IOPMAssertionID?
     #if TENMAKU_TEST_BUILD
@@ -67,8 +68,13 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
 
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
+        preflight(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: UnlockKey.any.rawValue, reply: reply)
+    }
+
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
         withAuthorizedPeer(reply: reply, denied: LayerFailure.inputSessionMismatch.error()) { [self] peer in
             guard peer.isConsoleUser else { return reply(LayerFailure.inputSessionMismatch.error()) }
+            guard UnlockKey(rawValue: unlockKeyUsage) != nil else { return reply(LayerFailure.invalidUnlockKey.error()) }
             guard InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) != nil else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
@@ -87,14 +93,20 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
 
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
+        engage(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: UnlockKey.any.rawValue, reply: reply)
+    }
+
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
         withAuthorizedPeer(reply: reply, denied: LayerFailure.inputSessionMismatch.error()) { [self] peer in
             guard peer.isConsoleUser else { return reply(LayerFailure.inputSessionMismatch.error()) }
+            guard let unlockKey = UnlockKey(rawValue: unlockKeyUsage) else { return reply(LayerFailure.invalidUnlockKey.error()) }
             guard let durations = InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
             let devices = physicalDevices()
             guard !devices.isEmpty else { return reply(LayerFailure.inputDevicesMissing.error()) }
             holdDurations = durations
+            self.unlockKey = unlockKey
             owner = peer
             engaged = true
             complete = true
@@ -280,7 +292,9 @@ final class InputLayer: NSObject, ShieldLayer, @unchecked Sendable {
         let control = PressedControl(device: registryID(IOHIDElementGetDevice(element)), page: page, usage: usage)
         if IOHIDValueGetIntegerValue(value) != 0 {
             pressed.insert(control)
-            if isKey && engaged { beginHold(control, isEscape: isEscape) }
+            if isKey, engaged, isEscape || unlockKey.matches(hidUsage: usage) {
+                beginHold(control, isEscape: isEscape)
+            }
         } else {
             pressed.remove(control)
             holds.removeValue(forKey: control)?.cancel()
@@ -323,7 +337,7 @@ if CommandLine.arguments.contains(requestInputMonitoringArgument) {
 }
 
 let layer = InputLayer()
-let listener = LayerListener(service: .input, layer: layer)
+let listener = LayerListener(service: .input, input: layer)
 listener.resume()
 exitWhenIdle { [layer] in layer.isIdle() }
 RunLoop.main.run()

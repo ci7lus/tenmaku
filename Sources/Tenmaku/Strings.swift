@@ -82,6 +82,10 @@ enum L10n {
         String(localized: "error.invalid_unlock_hold", defaultValue: "Set the hold duration between 1 and 30 seconds.", bundle: bundle, locale: locale)
     }
 
+    static func errorInvalidUnlockKey(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "error.invalid_unlock_key", defaultValue: "Choose a Touch ID unlock key again in General settings.", bundle: bundle, locale: locale)
+    }
+
     static func errorSecureEventInput(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "error.secure_event_input", defaultValue: "While Secure Event Input is active, Tenmaku needs the helper to block keystrokes and detect key holds. Leave the password field or install the helper.", bundle: bundle, locale: locale)
     }
@@ -283,11 +287,91 @@ enum L10n {
     }
 
     static func settingsUnlockHoldMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_hold_message", defaultValue: "To unlock, hold any key except Esc for the number of seconds set here, then touch the Touch ID sensor.", bundle: bundle, locale: locale)
+        String(localized: "settings.unlock_hold_message", defaultValue: "Hold the unlock key for the number of seconds set here to start Touch ID authentication.", bundle: bundle, locale: locale)
     }
 
     static func settingsUnlockHoldSeconds(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "settings.unlock_hold_seconds", defaultValue: "\(arg1) seconds", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKey(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key", defaultValue: "Touch ID Unlock Key", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyAny(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_any", defaultValue: "Any Key Except Esc", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyCapture(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_capture", defaultValue: "Record Key…", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyCaptureMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_capture_message", defaultValue: "Press one key to record it. Press Esc to cancel.", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyCaptureTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_capture_title", defaultValue: "Record a Touch ID Unlock Key", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyClear(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_clear", defaultValue: "Clear", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyCode(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_code", defaultValue: "Key \(arg1)", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyCustom(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_custom", defaultValue: "Custom", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyDelete(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_delete", defaultValue: "Delete (Backspace)", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyDown(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_down", defaultValue: "Down Arrow", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyKeypad(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_keypad", defaultValue: "Keypad \(arg1)", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyLeft(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_left", defaultValue: "Left Arrow", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyLeftModifier(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_left_modifier", defaultValue: "Left \(arg1)", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_message", defaultValue: "Changes apply the next time you lock.", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyReturn(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_return", defaultValue: "Return", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyRight(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_right", defaultValue: "Right Arrow", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyRightModifier(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_right_modifier", defaultValue: "Right \(arg1)", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeySpace(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_space", defaultValue: "Space", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyUnassigned(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_unassigned", defaultValue: "Unassigned (Any Key Except Esc)", bundle: bundle, locale: locale)
+    }
+
+    static func settingsUnlockKeyUp(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.unlock_key_up", defaultValue: "Up Arrow", bundle: bundle, locale: locale)
     }
 
     static func settingsWalkthrough(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -308,6 +392,10 @@ enum L10n {
 
     static func unlockGuideMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "unlock_guide.message", defaultValue: "To unlock, hold any key except Esc for \(arg1) seconds. When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
+    }
+
+    static func unlockGuideSelectedKeyMessage(_ arg1: String, _ arg2: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "unlock_guide.selected_key_message", defaultValue: "To unlock, hold \(arg1) for \(arg2). When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
     }
 
     static func unlockGuideTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -362,8 +450,8 @@ enum L10n {
         String(localized: "walkthrough.screen_lock", defaultValue: "Screen Locking", bundle: bundle, locale: locale)
     }
 
-    static func walkthroughSummaryMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.summary_message", defaultValue: "Use the menu bar icon to lock.\nTo unlock, hold any key except Esc for \(arg1) seconds, then touch the Touch ID sensor.", bundle: bundle, locale: locale)
+    static func walkthroughStartMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "walkthrough.start_message", defaultValue: "Use the menu bar icon to lock.", bundle: bundle, locale: locale)
     }
 
     static func walkthroughSummaryTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {

@@ -28,6 +28,56 @@ private func event(pid: Int64 = 0, key: CGKeyCode? = nil, button: Int64? = nil, 
 }
 
 final class SessionInputFilterTests: XCTestCase {
+    func testOnlySelectedPhysicalKeyRequestsTouchIDAndEscapeStillWorks() throws {
+        let durations = try XCTUnwrap(InputHoldDurations(unlockSeconds: 2, escapeSeconds: 3))
+        var filter = SessionInputFilter(holdDurations: durations, unlockKey: .space)
+        filter.engage()
+
+        XCTAssertFalse(filter.handle(type: .keyDown, event: event(key: 0), now: 1))
+        XCTAssertFalse(filter.handle(type: .flagsChanged, event: event(key: 55), now: 1))
+        XCTAssertTrue(filter.handle(type: .keyDown, event: event(pid: 123, key: 49), now: 1))
+        XCTAssertFalse(filter.takeUnlockRequest(now: 4))
+
+        XCTAssertFalse(filter.handle(type: .keyDown, event: event(key: 49), now: 5))
+        XCTAssertFalse(filter.takeUnlockRequest(now: 6.99))
+        XCTAssertTrue(filter.takeUnlockRequest(now: 7))
+        XCTAssertFalse(filter.takeUnlockRequest(now: 7.5))
+
+        XCTAssertFalse(filter.handle(type: .keyDown, event: event(key: 53), now: 8))
+        XCTAssertFalse(filter.takeEscapeRequest(now: 10.99))
+        XCTAssertTrue(filter.takeEscapeRequest(now: 11))
+        XCTAssertFalse(filter.takeUnlockRequest(now: 11))
+    }
+
+    func testKeyboardUsageMatchesSelectedKey() {
+        XCTAssertTrue(UnlockKey.space.matches(hidUsage: 0x2C))
+        XCTAssertFalse(UnlockKey.space.matches(hidUsage: 0x28))
+        XCTAssertFalse(UnlockKey.space.matches(hidUsage: 0x29))
+        XCTAssertTrue(UnlockKey.any.matches(hidUsage: 0x28))
+        XCTAssertFalse(UnlockKey.any.matches(hidUsage: 0x29))
+    }
+
+    func testSelectableKeysHaveUniqueVirtualKeyMappings() {
+        let keys = UnlockKey.allCases.filter { $0 != .any }
+        let codes = keys.compactMap { key -> CGKeyCode? in
+            let matches = (0..<128).map(CGKeyCode.init).filter { key.matches(virtualKey: $0) }
+            XCTAssertEqual(matches.count, 1, "\(key)")
+            return matches.first
+        }
+        XCTAssertEqual(Set(codes).count, keys.count)
+        XCTAssertNil(UnlockKey(rawValue: 0x29))
+    }
+
+    func testKeyCaptureMapsPhysicalPositionToBothBackends() throws {
+        let space = try XCTUnwrap(UnlockKey(virtualKey: 49))
+        XCTAssertTrue(space.matches(virtualKey: 49))
+        XCTAssertTrue(space.matches(hidUsage: 0x2C))
+        let f5 = try XCTUnwrap(UnlockKey(virtualKey: 0x60))
+        XCTAssertTrue(f5.matches(hidUsage: 0x3E))
+        XCTAssertNil(UnlockKey(virtualKey: 53))
+        XCTAssertNil(UnlockKey(virtualKey: 0x39))
+    }
+
     func testMissedKeyUpKeepsInputBlockedUntilConfirmedSystemLock() throws {
         var filter = SessionInputFilter()
         filter.engage()

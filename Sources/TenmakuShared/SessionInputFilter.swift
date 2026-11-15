@@ -1,3 +1,4 @@
+import Carbon
 import CoreGraphics
 import Foundation
 
@@ -10,6 +11,7 @@ public struct SessionInputFilter {
     }
 
     private let holdDurations: InputHoldDurations
+    private let unlockKey: UnlockKey
     private var pressedKeys: Set<CGKeyCode> = []
     private var pressedButtons: Set<Int64> = []
     private var holds: [CGKeyCode: Hold] = [:]
@@ -20,8 +22,9 @@ public struct SessionInputFilter {
     public var isDraining: Bool { !isEngaged && hasPressedControls }
     public var hasPressedControls: Bool { !pressedKeys.isEmpty || !pressedButtons.isEmpty }
 
-    public init(holdDurations: InputHoldDurations = .standard) {
+    public init(holdDurations: InputHoldDurations = .standard, unlockKey: UnlockKey = .any) {
         self.holdDurations = holdDurations
+        self.unlockKey = unlockKey
     }
 
     public mutating func engage(pressedKeys: Set<CGKeyCode> = [], pressedButtons: Set<Int64> = []) {
@@ -69,7 +72,7 @@ public struct SessionInputFilter {
             guard code != 57 else { return false }
             let wasNew = pressedKeys.insert(code).inserted
             if isEngaged, wasNew, event.getIntegerValueField(.keyboardEventAutorepeat) == 0 {
-                holds[code] = Hold(startedAt: now)
+                beginHold(for: code, now: now)
             }
         case .keyUp:
             let code = CGKeyCode(truncatingIfNeeded: event.getIntegerValueField(.keyboardEventKeycode))
@@ -83,7 +86,7 @@ public struct SessionInputFilter {
                 holds.removeValue(forKey: code)
             } else {
                 pressedKeys.insert(code)
-                if isEngaged { holds[code] = Hold(startedAt: now) }
+                if isEngaged { beginHold(for: code, now: now) }
             }
         case .leftMouseDown:
             pressedButtons.insert(0)
@@ -117,13 +120,20 @@ public struct SessionInputFilter {
         return requested
     }
 
+    private mutating func beginHold(for code: CGKeyCode, now: TimeInterval) {
+        if Int(code) == kVK_Escape || unlockKey.matches(virtualKey: code) {
+            holds[code] = Hold(startedAt: now)
+        }
+    }
+
     private mutating func settleDueHolds(now: TimeInterval) {
         guard isEngaged else { return }
         for (code, hold) in holds where !hold.requested {
-            let duration = holdDurations.seconds(isEscape: code == 53)
+            let isEscape = Int(code) == kVK_Escape
+            let duration = holdDurations.seconds(isEscape: isEscape)
             if now - hold.startedAt >= duration {
                 holds[code]?.requested = true
-                if code == 53 { escapeRequested = true } else { unlockRequested = true }
+                if isEscape { escapeRequested = true } else { unlockRequested = true }
             }
         }
     }

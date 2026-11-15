@@ -6,7 +6,7 @@ import IOKit.pwr_mgt
 import TenmakuShared
 
 /// Unprivileged input control that runs independently of the UI.
-final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
+final class EventTapInputLayer: NSObject, InputControl, @unchecked Sendable {
     private var filter = SessionInputFilter()
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
@@ -23,7 +23,12 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     ]
 
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
+        preflight(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: UnlockKey.any.rawValue, reply: reply)
+    }
+
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
+            guard UnlockKey(rawValue: unlockKeyUsage) != nil else { return reply(LayerFailure.invalidUnlockKey.error()) }
             guard InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) != nil else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
@@ -48,7 +53,12 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
     }
 
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
+        engage(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: UnlockKey.any.rawValue, reply: reply)
+    }
+
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
+            guard let unlockKey = UnlockKey(rawValue: unlockKeyUsage) else { return reply(LayerFailure.invalidUnlockKey.error()) }
             guard let durations = InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
@@ -81,7 +91,7 @@ final class EventTapInputLayer: NSObject, ShieldLayer, @unchecked Sendable {
                       CGEventSource.buttonState(.hidSystemState, button: button) else { return nil }
                 return Int64(number)
             })
-            filter = SessionInputFilter(holdDurations: durations)
+            filter = SessionInputFilter(holdDurations: durations, unlockKey: unlockKey)
             filter.engage(pressedKeys: keys, pressedButtons: buttons)
             CFRunLoopAddSource(CFRunLoopGetMain(), newSource, .commonModes)
             preventIdleSleep()

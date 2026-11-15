@@ -11,7 +11,7 @@ if CommandLine.arguments.contains(requestSessionInputAccessArgument) {
 }
 
 let layer = EventTapInputLayer()
-let listener = LayerListener(service: .sessionInput, layer: layer)
+let listener = LayerListener(service: .sessionInput, input: layer)
 listener.resume()
 exitWhenIdle { [layer] in layer.isIdle() }
 RunLoop.main.run()
