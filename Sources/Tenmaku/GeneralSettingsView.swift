@@ -7,6 +7,7 @@ struct GeneralSettingsView: View {
     @AppStorage(DefaultsKey.customUnlockKeyEnabled) private var customUnlockKeyEnabled: Bool?
     @AppStorage(DefaultsKey.unlockHoldSeconds) private var unlockHoldSeconds = defaultUnlockHoldSeconds
     @AppStorage(DefaultsKey.escapeHoldSeconds) private var escapeHoldSeconds = defaultEscapeHoldSeconds
+    @State private var showsDeveloperSupport = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,6 +46,21 @@ struct GeneralSettingsView: View {
                 Section {
                     holdDurationRow(title: L10n.settingsEscapeHold(), message: L10n.settingsEscapeHoldMessage(), seconds: $escapeHoldSeconds)
                 }
+                Section {
+                    Button {
+                        showsDeveloperSupport = true
+                    } label: {
+                        HStack {
+                            Text(L10n.settingsDeveloperSupportTitle())
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .formStyle(.grouped)
             .fixedSize(horizontal: false, vertical: true)
@@ -60,6 +76,9 @@ struct GeneralSettingsView: View {
         }
         .frame(width: 520)
         .fixedSize()
+        .sheet(isPresented: $showsDeveloperSupport) {
+            DeveloperSupportView()
+        }
     }
 
     private var preference: UnlockKeyPreference {
@@ -101,5 +120,59 @@ struct GeneralSettingsView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+private struct DeveloperSupportView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(L10n.settingsDeveloperSupportTitle())
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                Text(L10n.settingsDeveloperSupportMessage())
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 20)
+
+            Form {
+                Section {
+                    externalLink(
+                        L10n.settingsDeveloperSupportProgramLink(),
+                        to: URL(string: "https://kei.pronama.jp/pronama-chan-developer-support-program/")!
+                    )
+                    externalLink(
+                        L10n.settingsDeveloperSupportPronamaLink(),
+                        to: URL(string: "https://pronama.jp")!
+                    )
+                }
+            }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .fixedSize(horizontal: false, vertical: true)
+
+            Button(L10n.settingsDeveloperSupportClose()) { dismiss() }
+                .keyboardShortcut(.cancelAction)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.horizontal, 20)
+        }
+        .padding(.vertical, 20)
+        .frame(width: 460)
+    }
+
+    private func externalLink(_ title: String, to destination: URL) -> some View {
+        Link(destination: destination) {
+            HStack {
+                Text(title)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

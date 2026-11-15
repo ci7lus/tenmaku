@@ -1189,6 +1189,96 @@
         }
       }
     },
+    "settings.developer_support_close": {
+      "comment": "Button that closes the Development Support Program notice.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "閉じる"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "settings.developer_support_message": {
+      "comment": "Description shown in the notice for the Development Support Program.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本アプリは、「プロ生ちゃん アプリ開発支援プログラム」のサポートを受けています。\nアプリの公証などの各種手続きについてサポートいただいています。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This app is supported by the Pronama-chan Developer Support Program.\nThe program helps with app notarization and other procedures."
+          }
+        }
+      }
+    },
+    "settings.developer_support_program_link": {
+      "comment": "External link to the Development Support Program page.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プログラムについてはこちら"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learn About the Program"
+          }
+        }
+      }
+    },
+    "settings.developer_support_pronama_link": {
+      "comment": "External link to the Programming Live Broadcast website.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「プロ生」についてはこちら"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Learn About Pronama"
+          }
+        }
+      }
+    },
+    "settings.developer_support_title": {
+      "comment": "Item in General settings and heading of the guide it opens.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プロ生ちゃん アプリ開発支援プログラムについて"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About the Pronama-chan Developer Support Program"
+          }
+        }
+      }
+    },
     "settings.escape_hold": {
       "comment": "How many seconds to hold Esc to switch to the macOS lock screen.",
       "extractionState": "manual",

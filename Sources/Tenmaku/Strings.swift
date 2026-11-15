@@ -266,6 +266,26 @@ enum L10n {
         String(localized: "protection.unlock_reason", defaultValue: "End Tenmaku shielding", bundle: bundle, locale: locale)
     }
 
+    static func settingsDeveloperSupportClose(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.developer_support_close", defaultValue: "Close", bundle: bundle, locale: locale)
+    }
+
+    static func settingsDeveloperSupportMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.developer_support_message", defaultValue: "This app is supported by the Pronama-chan Developer Support Program.\nThe program helps with app notarization and other procedures.", bundle: bundle, locale: locale)
+    }
+
+    static func settingsDeveloperSupportProgramLink(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.developer_support_program_link", defaultValue: "Learn About the Program", bundle: bundle, locale: locale)
+    }
+
+    static func settingsDeveloperSupportPronamaLink(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.developer_support_pronama_link", defaultValue: "Learn About Pronama", bundle: bundle, locale: locale)
+    }
+
+    static func settingsDeveloperSupportTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(localized: "settings.developer_support_title", defaultValue: "About the Pronama-chan Developer Support Program", bundle: bundle, locale: locale)
+    }
+
     static func settingsEscapeHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(localized: "settings.escape_hold", defaultValue: "Esc Hold Duration", bundle: bundle, locale: locale)
     }

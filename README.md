@@ -26,6 +26,11 @@ NOTARY_PROFILE=your-profile-name scripts/notarize.sh         # Notarize, staple 
 | [docs/VERIFICATION_SUMMARY.md](docs/VERIFICATION_SUMMARY.md) | Summary of verification results |
 | [docs/VERIFICATION.md](docs/VERIFICATION.md) | Verification methods, measurements, and limitations |
 
+## About the Pronama-chan Developer Support Program
+
+This app is supported by the Pronama-chan Developer Support Program.
+The program helps with app notarization and other procedures.
+
 ## License
 
 [Mozilla Public License 2.0](LICENSE)
