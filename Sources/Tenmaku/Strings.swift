@@ -3,487 +3,487 @@ import Foundation
 
 enum L10n {
     static func commonCancel(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "common.cancel", defaultValue: "Cancel", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "common.cancel", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func connectionFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "connection.failed", defaultValue: "Could not connect.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "connection.failed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func connectionNoResponse(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "connection.no_response", defaultValue: "No response: \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "connection.no_response", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func connectionTimeout(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "connection.timeout", defaultValue: "No response.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "connection.timeout", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorCoverFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.cover_failed", defaultValue: "Could not start monitoring display configuration and gamma.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.cover_failed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorGammaFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.gamma_failed", defaultValue: "Could not adjust the colors on some displays.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.gamma_failed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputAccessibilityDenied(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_accessibility_denied", defaultValue: "Allow Accessibility for TenmakuInput.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_accessibility_denied", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputControlMonitorFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_control_monitor_failed", defaultValue: "Could not monitor input control.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_control_monitor_failed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputControlStartFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_control_start_failed", defaultValue: "Could not start input control.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_control_start_failed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputControlStopped(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_control_stopped", defaultValue: "Input control has stopped.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_control_stopped", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputControlsHeld(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_controls_held", defaultValue: "Release any keys and mouse buttons you are holding.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_controls_held", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputDeviceSeizeFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_device_seize_failed", defaultValue: "Could not take exclusive control of the input devices.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_device_seize_failed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputDevicesMissing(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_devices_missing", defaultValue: "No input devices were found.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_devices_missing", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputListenDenied(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_listen_denied", defaultValue: "Allow Input Monitoring for TenmakuInput.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_listen_denied", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputMonitoringDenied(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_monitoring_denied", defaultValue: "Check the Input Monitoring permission.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_monitoring_denied", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputMonitoringStatus(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_monitoring_status", defaultValue: "Check the Input Monitoring permission (\(arg1)).", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_monitoring_status", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func errorInputPermissionsMissing(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_permissions_missing", defaultValue: "Check the Input Monitoring and Accessibility permissions for TenmakuInput.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_permissions_missing", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputReleaseUnconfirmed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_release_unconfirmed", defaultValue: "Could not confirm that all keys and mouse buttons were released.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_release_unconfirmed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInputSessionMismatch(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_session_mismatch", defaultValue: "This login session cannot control the helper. Return to the session that started shielding.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.input_session_mismatch", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInvalidUnlockHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.invalid_unlock_hold", defaultValue: "Set the hold duration between 1 and 30 seconds.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.invalid_unlock_hold", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorInvalidUnlockKey(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.invalid_unlock_key", defaultValue: "Choose the Shielding Release Key again in General settings.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.invalid_unlock_key", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorSecureEventInput(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.secure_event_input", defaultValue: "While Secure Event Input is active, Tenmaku needs the helper to block keystrokes and detect key holds. Leave the password field or install the helper.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.secure_event_input", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorSessionLockUnconfirmed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.session_lock_unconfirmed", defaultValue: "Tenmaku could not verify the macOS lock screen. The remaining protection stays active.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.session_lock_unconfirmed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func errorUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.unknown", defaultValue: "An unknown shielding error occurred.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "error.unknown", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func inputPermissionControl(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "input.permission_control", defaultValue: "Allow Input Control", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "input.permission_control", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func inputPermissionEventTapMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "input.permission_event_tap_message", defaultValue: "Allow Input Monitoring and Accessibility to block keyboard and mouse input while shielding is active. To also block input during Secure Event Input, go back and install the helper.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "input.permission_event_tap_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func inputPermissionHelperMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "input.permission_helper_message", defaultValue: "Allow Input Monitoring so the helper can take control of the keyboard and mouse.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "input.permission_helper_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func inputPermissionMonitoring(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "input.permission_monitoring", defaultValue: "Allow Input Monitoring", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "input.permission_monitoring", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func inputWithHelper(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "input.with_helper", defaultValue: "With Helper", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "input.with_helper", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func inputWithoutHelper(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "input.without_helper", defaultValue: "Without Helper", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "input.without_helper", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuFailed(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.failed", defaultValue: "Failed: \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.failed", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func menuHandingOff(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.handing_off", defaultValue: "Switching to the macOS lock screen: \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.handing_off", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func menuIdle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.idle", defaultValue: "Shielding Off", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.idle", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuInterrupted(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.interrupted", defaultValue: "Interrupted (macOS Screen Locked)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.interrupted", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuQuit(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.quit", defaultValue: "Quit Tenmaku", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.quit", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuSettings(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.settings", defaultValue: "Settings…", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.settings", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuShielded(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.shielded", defaultValue: "Shielding On", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.shielded", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuStarting(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.starting", defaultValue: "Starting Shielding…", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.starting", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuTestStart(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.test_start", defaultValue: "Start Shielding (Test)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.test_start", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuTestStop(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.test_stop", defaultValue: "Stop Shielding (Test)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.test_stop", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func menuUnlockFailed(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.unlock_failed", defaultValue: "Could not end shielding: \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "menu.unlock_failed", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func permissionGranted(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "permission.granted", defaultValue: "Allowed", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "permission.granted", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func permissionHelperRequired(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "permission.helper_required", defaultValue: "Checked After Installing Helper", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "permission.helper_required", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func permissionMissing(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "permission.missing", defaultValue: "Not Allowed", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "permission.missing", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func permissionNeedsApproval(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "permission.needs_approval", defaultValue: "Awaiting Approval", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "permission.needs_approval", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func permissionNotInstalled(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "permission.not_installed", defaultValue: "Not Installed", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "permission.not_installed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func permissionSkipped(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "permission.skipped", defaultValue: "Skipped", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "permission.skipped", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func permissionUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "permission.unknown", defaultValue: "Could Not Check Status", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "permission.unknown", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionAuthenticationFailed(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.authentication_failed", defaultValue: "Authentication was not successful.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.authentication_failed", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionAuthenticationTimeout(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.authentication_timeout", defaultValue: "Authentication timed out.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.authentication_timeout", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionCoverLost(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.cover_lost", defaultValue: "Waiting for display shielding to recover or for the emergency cover monitor to respond.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.cover_lost", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionDisplaysUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.displays_unknown", defaultValue: "Could not check the display configuration.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.displays_unknown", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionEscapeHeld(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.escape_held", defaultValue: "Esc was held down.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.escape_held", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionGammaLost(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.gamma_lost", defaultValue: "Display color adjustment no longer hides the screen.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.gamma_lost", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionInputLost(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.input_lost", defaultValue: "Input can no longer be blocked.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.input_lost", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionLockPermissionRequired(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.lock_permission_required", defaultValue: "Allow Screen Locking.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.lock_permission_required", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionLoginItemsRequired(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.login_items_required", defaultValue: "Allow Tenmaku in Login Items in System Settings.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.login_items_required", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionMirrored(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.mirrored", defaultValue: "Display mirroring is not supported.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.mirrored", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionMirroredStart(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.mirrored_start", defaultValue: "Cannot start shielding while display mirroring is on.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.mirrored_start", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionRegistrationFailed(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.registration_failed", defaultValue: "Could not register: \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.registration_failed", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func protectionStart(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.start", defaultValue: "Start Shielding", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.start", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionStateUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.state_unknown", defaultValue: "Could not verify the shielding status.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.state_unknown", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionTouchIdRequired(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.touch_id_required", defaultValue: "Touch ID must be available to start shielding. Set up Touch ID in System Settings or sign in to macOS with your password, then try again.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.touch_id_required", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionTouchIdUnavailable(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.touch_id_unavailable", defaultValue: "Touch ID is unavailable. Hold Esc to request the macOS lock screen.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.touch_id_unavailable", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionUnlock(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.unlock", defaultValue: "End Shielding…", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.unlock", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func protectionUnlockReason(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.unlock_reason", defaultValue: "End Tenmaku shielding", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "protection.unlock_reason", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsDeveloperSupportClose(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.developer_support_close", defaultValue: "Close", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.developer_support_close", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsDeveloperSupportMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.developer_support_message", defaultValue: "This app is supported by the Pronama-chan Developer Support Program.\nThe program helps with app notarization and other procedures.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.developer_support_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsDeveloperSupportProgramLink(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.developer_support_program_link", defaultValue: "Learn About the Program", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.developer_support_program_link", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsDeveloperSupportPronamaLink(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.developer_support_pronama_link", defaultValue: "Learn About Pronama", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.developer_support_pronama_link", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsDeveloperSupportTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.developer_support_title", defaultValue: "About the Pronama-chan Developer Support Program", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.developer_support_title", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsEscapeHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.escape_hold", defaultValue: "Esc Hold Duration", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.escape_hold", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsEscapeHoldMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.escape_hold_message", defaultValue: "While shielding is active, hold Esc for the number of seconds set here to switch to the macOS lock screen. Use this when Touch ID is unavailable, for example due to a restriction.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.escape_hold_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsGeneral(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.general", defaultValue: "General", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.general", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsInputBlocking(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.input_blocking", defaultValue: "Input Blocking", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.input_blocking", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_hold", defaultValue: "Hold Duration for the Shielding Release Key", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_hold", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockHoldMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_hold_message", defaultValue: "While shielding is active, hold the shielding release key for the number of seconds set here to start Touch ID authentication.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_hold_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockHoldSeconds(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_hold_seconds", defaultValue: "\(arg1) seconds", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_hold_seconds", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func settingsUnlockKey(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key", defaultValue: "Shielding Release Key", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyAny(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_any", defaultValue: "Any Key Except Esc", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_any", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyCapture(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_capture", defaultValue: "Record Key…", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_capture", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyCaptureMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_capture_message", defaultValue: "Press one key to record it. Press Esc to cancel.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_capture_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyCaptureTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_capture_title", defaultValue: "Record a Touch ID Key", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_capture_title", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyClear(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_clear", defaultValue: "Clear", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_clear", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyCode(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_code", defaultValue: "Key \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_code", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func settingsUnlockKeyCustom(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_custom", defaultValue: "Custom", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_custom", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyDelete(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_delete", defaultValue: "Delete (Backspace)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_delete", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyDown(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_down", defaultValue: "Down Arrow", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_down", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyKeypad(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_keypad", defaultValue: "Keypad \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_keypad", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func settingsUnlockKeyLeft(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_left", defaultValue: "Left Arrow", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_left", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyLeftModifier(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_left_modifier", defaultValue: "Left \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_left_modifier", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func settingsUnlockKeyMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_message", defaultValue: "Changes apply the next time you start shielding.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyReturn(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_return", defaultValue: "Return", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_return", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyRight(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_right", defaultValue: "Right Arrow", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_right", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyRightModifier(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_right_modifier", defaultValue: "Right \(arg1)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_right_modifier", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func settingsUnlockKeySpace(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_space", defaultValue: "Space", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_space", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyUnassigned(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_unassigned", defaultValue: "Unassigned (Any Key Except Esc)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_unassigned", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsUnlockKeyUp(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_up", defaultValue: "Up Arrow", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.unlock_key_up", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsWalkthrough(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.walkthrough", defaultValue: "Getting Started", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "settings.walkthrough", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func unlockEscapeMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock.escape_message", defaultValue: "If you can’t end shielding with Touch ID, hold Esc for \(arg1) seconds to switch to the macOS lock screen.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "unlock.escape_message", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func unlockSecureEventInput(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock.secure_event_input", defaultValue: "Without the helper, key holds for Touch ID and Esc cannot be detected while Secure Event Input is active, such as in a password field.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "unlock.secure_event_input", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func unlockGuideHideNextTime(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.hide_next_time", defaultValue: "Don’t Show This Guide Again", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "unlock_guide.hide_next_time", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func unlockGuideMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.message", defaultValue: "To end shielding, hold any key except Esc for \(arg1) seconds. When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "unlock_guide.message", value: nil, table: nil), locale: locale, arguments: [arg1])
     }
 
     static func unlockGuideSelectedKeyMessage(_ arg1: String, _ arg2: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.selected_key_message", defaultValue: "To end shielding, hold \(arg1) for \(arg2). When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "unlock_guide.selected_key_message", value: nil, table: nil), locale: locale, arguments: [arg1, arg2])
     }
 
     static func unlockGuideTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.title", defaultValue: "How to End Shielding", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "unlock_guide.title", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughBack(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.back", defaultValue: "Back", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.back", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughDone(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.done", defaultValue: "Done", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.done", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughHelperMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.helper_message", defaultValue: "Installing the helper lets Tenmaku block keyboard and mouse input, including while Secure Event Input is active.\nYou can skip this step and install it later.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.helper_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughHelperTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.helper_title", defaultValue: "Install Helper (Optional)", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.helper_title", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughInputControl(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.input_control", defaultValue: "Input Control", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.input_control", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughInstall(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.install", defaultValue: "Install", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.install", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughLockMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.lock_message", defaultValue: "This permission lets Tenmaku switch to the macOS lock screen if it can no longer maintain shielding.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.lock_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughLockTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.lock_title", defaultValue: "Allow Screen Locking", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.lock_title", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughNext(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.next", defaultValue: "Next", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.next", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughOpenLoginItems(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.open_login_items", defaultValue: "Open Login Items", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.open_login_items", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughRequestPermission(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.request_permission", defaultValue: "Request Permission", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.request_permission", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughScreenLock(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.screen_lock", defaultValue: "Screen Locking", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.screen_lock", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughStartMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.start_message", defaultValue: "You can start shielding from the menu bar icon.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.start_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughSummaryTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.summary_title", defaultValue: "Setup Complete", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.summary_title", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughWelcomeMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.welcome_message", defaultValue: "Prevent others from using your Mac while work is in progress.\nComputer Use can continue to operate it.", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.welcome_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func walkthroughWelcomeTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.welcome_title", defaultValue: "Welcome to Tenmaku", bundle: bundle, locale: locale)
+        String(format: bundle.localizedString(forKey: "walkthrough.welcome_title", value: nil, table: nil), locale: locale, arguments: [])
     }
 
 }

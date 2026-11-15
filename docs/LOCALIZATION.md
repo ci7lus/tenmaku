@@ -19,15 +19,15 @@ python3 scripts/generate-strings.py
 scripts/check-localization.sh
 ```
 
-The generator creates typed `L10n` accessors. In SwiftUI and AppKit, use the localized `String` returned by these accessors. When adding a key, update its call sites. Run the generator before using `swift build` or `swift test` directly.
+The generator creates typed `L10n` accessors from localization keys and parameter types. Display copy comes from the bundled localization resources. In SwiftUI and AppKit, use the localized `String` returned by these accessors. When adding a key, update its call sites. Run the generator before using `swift build` or `swift test` directly.
 
-`check-localization.sh` verifies translation coverage, parameter consistency, and the generated file. It then compiles the catalog into a temporary `.app` and runs a probe targeting macOS 13. The probe covers English and Japanese language selection, English fallback for unsupported languages, plurals, interpolated arguments, and helper errors. The probe leaves the displays and input unchanged.
+`check-localization.sh` verifies translation coverage, parameter consistency, and the generated file. It then compiles the catalog into a temporary `.app` and runs a probe targeting macOS 13. The probe covers English and Japanese language selection, English fallback for unsupported languages, plurals, interpolated arguments, helper errors, and startup refusal when a required resource is missing. The probe leaves the displays and input unchanged.
 
 ## Build Integration
 
 `scripts/build.sh` generates the accessors before building Swift. It uses `xcstringstool compile` to write translations to `Contents/Resources/ja.lproj` and `en.lproj` in the main app, then signs it. Python 3 is required only to generate the accessors.
 
-The app uses localization resources in its bundle. Use the packaged app for display checks because `swift run` does not produce a `.app` with these resources.
+The app requires `Localizable.strings` for both languages and the English `Localizable.stringsdict` for plurals. If a required file is unreadable, the app logs the filename and exits. Use the app packaged by `scripts/build.sh` for display checks because `swift run` has no bundled localization resources.
 
 ## Errors from Other Processes
 

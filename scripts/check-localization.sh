@@ -17,7 +17,21 @@ swiftc -target "$(uname -m)-apple-macos13.0" -module-cache-path "$PROBE/ModuleCa
 swiftc -target "$(uname -m)-apple-macos13.0" -module-cache-path "$PROBE/ModuleCache" \
   -I "$PROBE" -L "$PROBE" -lTenmakuShared -Xlinker -rpath -Xlinker "$PROBE" \
   "$ROOT/Sources/Tenmaku/Strings.swift" "$ROOT/Sources/Tenmaku/LocalizedLayerError.swift" \
+  "$ROOT/Sources/Tenmaku/LocalizationResources.swift" \
   "$ROOT/Tests/LocalizationCheck.swift" -o "$APP/Contents/MacOS/LocalizationCheck"
 for language in ja en fr; do
   "$APP/Contents/MacOS/LocalizationCheck" "$language" -AppleLanguages "($language)" -AppleLocale "$language"
 done
+
+for resource in ja.lproj/Localizable.strings en.lproj/Localizable.strings en.lproj/Localizable.stringsdict; do
+  mv "$APP/Contents/Resources/$resource" "$PROBE/removed"
+  probe_exit=0
+  output=$("$APP/Contents/MacOS/LocalizationCheck" ja -AppleLanguages '(ja)' -AppleLocale ja 2>&1) || probe_exit=$?
+  if [[ "$probe_exit" != 1 || "$output" != *"$resource"* ]]; then
+    print -u2 -- "The app did not report the missing translation resource and exit: $resource (exit code $probe_exit)"
+    print -u2 -- "$output"
+    exit 1
+  fi
+  mv "$PROBE/removed" "$APP/Contents/Resources/$resource"
+done
+print -- 'Launch correctly refused when translation resources were missing'

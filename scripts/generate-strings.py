@@ -26,24 +26,6 @@ def units(localization):
             yield from units(variant)
 
 
-def swift_literal(value):
-    return json.dumps(value, ensure_ascii=False)
-
-
-def default_literal(value):
-    parts, position, argument = [], 0, 0
-    for match in FORMAT.finditer(value):
-        parts.append(swift_literal(value[position:match.start()])[1:-1])
-        if match.group() == "%%":
-            parts.append("%")
-        else:
-            argument += 1
-            parts.append(f"\\(arg{argument})")
-        position = match.end()
-    parts.append(swift_literal(value[position:])[1:-1])
-    return '"' + ''.join(parts) + '"'
-
-
 def generate():
     catalog = json.loads(CATALOG.read_text())
     assert catalog["sourceLanguage"] == "en", "The source language must be English"
@@ -67,8 +49,10 @@ def generate():
                 assert parameters(unit["value"]) == args, f"Format arguments do not match: {key}/{language}"
         signature = [f"_ arg{i}: {'Int' if spec == '%lld' else 'String'}" for i, spec in enumerate(args, 1)]
         signature += ["bundle: Bundle = .main", "locale: Locale = .current"]
+        lookup = f'bundle.localizedString(forKey: "{key}", value: nil, table: nil)'
+        arguments = ', '.join(f"arg{i}" for i in range(1, len(args) + 1))
         lines += [f"    static func {symbol}({', '.join(signature)}) -> String {{",
-                  f"        String(localized: {swift_literal(key)}, defaultValue: {default_literal(source)}, bundle: bundle, locale: locale)",
+                  f"        String(format: {lookup}, locale: locale, arguments: [{arguments}])",
                   "    }", ""]
     lines += ["}", ""]
     return '\n'.join(lines), len(symbols)

@@ -4,6 +4,7 @@ import AppKit
 @MainActor
 enum TenmakuApp {
     static func main() {
+        LocalizationResources.require()
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate

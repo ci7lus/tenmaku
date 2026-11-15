@@ -5,6 +5,7 @@ import TenmakuShared
 @main
 struct LocalizationCheck {
     static func main() {
+        LocalizationResources.require()
         let english = CommandLine.arguments[1] != "ja"
         check(L10n.settingsGeneral(), english ? "General" : "一般")
         check(L10n.walkthroughHelperTitle(), english ? "Install Helper (Optional)" : "ヘルパーのインストール（任意）")
