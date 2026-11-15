@@ -3,11 +3,13 @@
 Tenmaku is a lock app for macOS that prevents others from using your Mac while work is in progress.
 Claude and Codex can continue to control your Mac through Computer Use.
 
+![tenmaku usage image](https://github.com/user-attachments/assets/c27d23f0-f4b0-4e0a-8c90-b5f9b489b639)
+
 ## Build
 
 ```sh
-scripts/build.sh                                           # Build and sign build/Tenmaku.app
-NOTARY_PROFILE=your-profile-name scripts/notarize.sh         # Notarize, staple the ticket, and verify with spctl
+scripts/build.sh # Build and sign build/Tenmaku.app
+NOTARY_PROFILE=your-profile-name scripts/notarize.sh # Notarize, staple the ticket, and verify with spctl
 ```
 
 | Location in the app bundle | Role |
