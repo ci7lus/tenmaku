@@ -5,6 +5,29 @@ Claude and Codex can continue to control your Mac through Computer Use.
 
 ![tenmaku usage image](https://github.com/user-attachments/assets/c27d23f0-f4b0-4e0a-8c90-b5f9b489b639)
 
+## Minimum requirements
+
+- macOS 13.0 Ventura or later. The app bundle includes executables for Apple silicon and Intel Macs.
+- Touch ID set up and available to start shielding and unlock Tenmaku.
+- A single display or multiple displays in extended mode.
+- Accessibility permission for Tenmaku to request the macOS screen lock.
+- If you use the optional privileged helper, approve it in Login Items and grant it Input Monitoring permission.
+- Without the helper, grant TenmakuInput Accessibility and Input Monitoring permissions. Tenmaku can start shielding in this mode only while Secure Event Input is inactive.
+
+Tenmaku may not work as expected outside the [tested environment](#tested-environment).
+
+## Tested environment
+
+The hardware trials used prototypes with the privileged helper and covered a subset of the acceptance tests.
+
+| Item | Environment |
+| --- | --- |
+| Mac | MacBook Pro (`MacBookPro18,3`) |
+| macOS | 27.2 (26B123) |
+| Displays | Built-in display (up to 120 Hz) and external PHL 279E1 (60 Hz) in extended mode |
+| Input devices | Built-in keyboard and trackpad, and a mouse connected via a USB receiver |
+| Clients | Codex Desktop (Computer Use) and Claude Code (native Computer Use) |
+
 ## Build
 
 ```sh
