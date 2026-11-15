@@ -37,6 +37,18 @@ enum PermissionState: Equatable {
         case .notRequired, .unavailable: .secondary
         }
     }
+
+    static func inputMonitoringDuringRefresh(
+        mode: InputProtectionMode,
+        isRegistered: Bool,
+        previousMode: InputProtectionMode,
+        previous: Self?
+    ) -> Self? {
+        if isRegistered {
+            return mode == previousMode ? previous : nil
+        }
+        return mode == .eventTap ? .missing : .unavailable(L10n.permissionHelperRequired())
+    }
 }
 
 enum WalkthroughStep: Int, CaseIterable {
@@ -98,7 +110,7 @@ enum WalkthroughStep: Int, CaseIterable {
     @MainActor
     var permission: PermissionState? {
         switch self {
-        case .welcome, .summary:
+        case .welcome, .inputMonitoring, .summary:
             nil
         case .helper:
             switch SMAppService.daemon(plistName: LayerService.input.plistName).status {
@@ -108,9 +120,6 @@ enum WalkthroughStep: Int, CaseIterable {
             case .notRegistered, .notFound: .missing
             @unknown default: .unavailable(L10n.permissionUnknown())
             }
-        case .inputMonitoring:
-            // Input Monitoring is granted to the helper app, so check after installation.
-            .unavailable(L10n.permissionHelperRequired())
         case .postEvent:
             CGPreflightPostEventAccess() ? .granted : .missing
         }
@@ -281,14 +290,17 @@ struct WalkthroughView: View {
         refreshGeneration += 1
         let generation = refreshGeneration
         let mode = InputProtectionMode.selected
+        let previousMode = inputMode
         inputMode = mode
-        for item in WalkthroughStep.permissionSteps {
+        for item in WalkthroughStep.permissionSteps where item != .inputMonitoring {
             permissions[item] = item.permission
         }
         let registered = mode == .helper
             ? permissions[.helper] == .granted
             : SMAppService.agent(plistName: mode.service.plistName).status == .enabled
-        if mode == .eventTap { permissions[.inputMonitoring] = .missing }
+        permissions[.inputMonitoring] = PermissionState.inputMonitoringDuringRefresh(
+            mode: mode, isRegistered: registered, previousMode: previousMode, previous: permissions[.inputMonitoring]
+        )
         guard registered else { return }
         Task {
             let failure = await LayerClient(service: mode.service).preflight()
