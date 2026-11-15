@@ -49,9 +49,9 @@ While locked, prevent the displays and the Mac from sleeping due to inactivity s
 
 ## Start, Unlock, and Failure Handling
 
-In General settings, the Esc hold duration ranges from 1 to 30 seconds and defaults to 10 seconds. The app stores it independently of the normal unlock hold duration and applies changes at the next lock. Both helper configurations use the same setting. The app shows the duration in the pre-lock guide and on the setup completion screen. The input layer validates the duration in preflight and receives the same value when the lock is applied.
+In General settings, the Esc hold duration ranges from 1 to 30 seconds and defaults to 10 seconds. The app stores it independently of the normal unlock hold duration and applies changes at the next lock. Both helper configurations use the same setting. The app shows the duration in the pre-lock guide. The input layer validates the duration in preflight and receives the same value when the lock is applied.
 
-In General settings, **Touch ID Unlock Key** offers **Any Key Except Esc** and **Custom**. For a custom key, the registration dialog saves the physical position of the single key pressed. Esc cancels registration. If **Custom** is selected without a registered key, the app behaves as if **Any Key Except Esc** were selected. The selection applies at the next lock and appears in the pre-lock guide and on the setup completion screen. The app still blocks all other keys while locked. Holding Esc is reserved for handoff.
+In General settings, **Shielding Release Key** offers **Any Key Except Esc** and **Custom**. For a custom key, the registration dialog saves the physical position of the single key pressed. Esc cancels registration. If **Custom** is selected without a registered key, the app behaves as if **Any Key Except Esc** were selected. The selection applies at the next lock and appears in the pre-lock guide. The app still blocks all other keys while locked. Holding Esc is reserved for handoff.
 
 If the lock fails, keep the reason in the menu and animate the menu bar icon back to Open as the door opens. If the lock fails while the door is closing, or the user retries while it is opening, reverse the animation from the current door position. If macOS **Reduce motion** is enabled, switch without animating.
 

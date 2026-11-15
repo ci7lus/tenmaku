@@ -75,7 +75,7 @@ enum L10n {
     }
 
     static func errorInputSessionMismatch(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.input_session_mismatch", defaultValue: "This login session cannot control the helper. Return to the session that started the lock.", bundle: bundle, locale: locale)
+        String(localized: "error.input_session_mismatch", defaultValue: "This login session cannot control the helper. Return to the session that started shielding.", bundle: bundle, locale: locale)
     }
 
     static func errorInvalidUnlockHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -83,7 +83,7 @@ enum L10n {
     }
 
     static func errorInvalidUnlockKey(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.invalid_unlock_key", defaultValue: "Choose a Touch ID unlock key again in General settings.", bundle: bundle, locale: locale)
+        String(localized: "error.invalid_unlock_key", defaultValue: "Choose the Shielding Release Key again in General settings.", bundle: bundle, locale: locale)
     }
 
     static func errorSecureEventInput(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -95,7 +95,7 @@ enum L10n {
     }
 
     static func errorUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "error.unknown", defaultValue: "An unknown lock error occurred.", bundle: bundle, locale: locale)
+        String(localized: "error.unknown", defaultValue: "An unknown shielding error occurred.", bundle: bundle, locale: locale)
     }
 
     static func inputPermissionControl(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -103,7 +103,7 @@ enum L10n {
     }
 
     static func inputPermissionEventTapMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "input.permission_event_tap_message", defaultValue: "Allow Input Monitoring and Accessibility to block keyboard and mouse input while locked. To also block input during Secure Event Input, go back and install the helper.", bundle: bundle, locale: locale)
+        String(localized: "input.permission_event_tap_message", defaultValue: "Allow Input Monitoring and Accessibility to block keyboard and mouse input while shielding is active. To also block input during Secure Event Input, go back and install the helper.", bundle: bundle, locale: locale)
     }
 
     static func inputPermissionHelperMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -131,7 +131,7 @@ enum L10n {
     }
 
     static func menuIdle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.idle", defaultValue: "Unlocked", bundle: bundle, locale: locale)
+        String(localized: "menu.idle", defaultValue: "Shielding Off", bundle: bundle, locale: locale)
     }
 
     static func menuInterrupted(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -147,11 +147,11 @@ enum L10n {
     }
 
     static func menuShielded(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.shielded", defaultValue: "Locked", bundle: bundle, locale: locale)
+        String(localized: "menu.shielded", defaultValue: "Shielding On", bundle: bundle, locale: locale)
     }
 
     static func menuStarting(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.starting", defaultValue: "Locking…", bundle: bundle, locale: locale)
+        String(localized: "menu.starting", defaultValue: "Starting Shielding…", bundle: bundle, locale: locale)
     }
 
     static func menuTestStart(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -163,7 +163,7 @@ enum L10n {
     }
 
     static func menuUnlockFailed(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "menu.unlock_failed", defaultValue: "Could not unlock: \(arg1)", bundle: bundle, locale: locale)
+        String(localized: "menu.unlock_failed", defaultValue: "Could not end shielding: \(arg1)", bundle: bundle, locale: locale)
     }
 
     static func permissionGranted(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -235,7 +235,7 @@ enum L10n {
     }
 
     static func protectionMirroredStart(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.mirrored_start", defaultValue: "Cannot lock while display mirroring is on.", bundle: bundle, locale: locale)
+        String(localized: "protection.mirrored_start", defaultValue: "Cannot start shielding while display mirroring is on.", bundle: bundle, locale: locale)
     }
 
     static func protectionRegistrationFailed(_ arg1: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -243,15 +243,15 @@ enum L10n {
     }
 
     static func protectionStart(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.start", defaultValue: "Lock", bundle: bundle, locale: locale)
+        String(localized: "protection.start", defaultValue: "Start Shielding", bundle: bundle, locale: locale)
     }
 
     static func protectionStateUnknown(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.state_unknown", defaultValue: "Could not verify the lock status.", bundle: bundle, locale: locale)
+        String(localized: "protection.state_unknown", defaultValue: "Could not verify the shielding status.", bundle: bundle, locale: locale)
     }
 
     static func protectionTouchIdRequired(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.touch_id_required", defaultValue: "Touch ID must be available to start the lock. Set up Touch ID in System Settings or sign in to macOS with your password, then try again.", bundle: bundle, locale: locale)
+        String(localized: "protection.touch_id_required", defaultValue: "Touch ID must be available to start shielding. Set up Touch ID in System Settings or sign in to macOS with your password, then try again.", bundle: bundle, locale: locale)
     }
 
     static func protectionTouchIdUnavailable(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -259,11 +259,11 @@ enum L10n {
     }
 
     static func protectionUnlock(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.unlock", defaultValue: "Unlock…", bundle: bundle, locale: locale)
+        String(localized: "protection.unlock", defaultValue: "End Shielding…", bundle: bundle, locale: locale)
     }
 
     static func protectionUnlockReason(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "protection.unlock_reason", defaultValue: "Unlock Tenmaku", bundle: bundle, locale: locale)
+        String(localized: "protection.unlock_reason", defaultValue: "End Tenmaku shielding", bundle: bundle, locale: locale)
     }
 
     static func settingsEscapeHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -271,7 +271,7 @@ enum L10n {
     }
 
     static func settingsEscapeHoldMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.escape_hold_message", defaultValue: "How long to hold Esc before switching to the macOS lock screen. Use this when Touch ID is disabled or otherwise unavailable.", bundle: bundle, locale: locale)
+        String(localized: "settings.escape_hold_message", defaultValue: "While shielding is active, hold Esc for the number of seconds set here to switch to the macOS lock screen. Use this when Touch ID is unavailable, for example due to a restriction.", bundle: bundle, locale: locale)
     }
 
     static func settingsGeneral(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -283,11 +283,11 @@ enum L10n {
     }
 
     static func settingsUnlockHold(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_hold", defaultValue: "Hold Duration to Unlock", bundle: bundle, locale: locale)
+        String(localized: "settings.unlock_hold", defaultValue: "Hold Duration for the Shielding Release Key", bundle: bundle, locale: locale)
     }
 
     static func settingsUnlockHoldMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_hold_message", defaultValue: "Hold the unlock key for the number of seconds set here to start Touch ID authentication.", bundle: bundle, locale: locale)
+        String(localized: "settings.unlock_hold_message", defaultValue: "While shielding is active, hold the shielding release key for the number of seconds set here to start Touch ID authentication.", bundle: bundle, locale: locale)
     }
 
     static func settingsUnlockHoldSeconds(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -295,7 +295,7 @@ enum L10n {
     }
 
     static func settingsUnlockKey(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key", defaultValue: "Touch ID Unlock Key", bundle: bundle, locale: locale)
+        String(localized: "settings.unlock_key", defaultValue: "Shielding Release Key", bundle: bundle, locale: locale)
     }
 
     static func settingsUnlockKeyAny(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -311,7 +311,7 @@ enum L10n {
     }
 
     static func settingsUnlockKeyCaptureTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_capture_title", defaultValue: "Record a Touch ID Unlock Key", bundle: bundle, locale: locale)
+        String(localized: "settings.unlock_key_capture_title", defaultValue: "Record a Touch ID Key", bundle: bundle, locale: locale)
     }
 
     static func settingsUnlockKeyClear(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -347,7 +347,7 @@ enum L10n {
     }
 
     static func settingsUnlockKeyMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "settings.unlock_key_message", defaultValue: "Changes apply the next time you lock.", bundle: bundle, locale: locale)
+        String(localized: "settings.unlock_key_message", defaultValue: "Changes apply the next time you start shielding.", bundle: bundle, locale: locale)
     }
 
     static func settingsUnlockKeyReturn(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -379,7 +379,7 @@ enum L10n {
     }
 
     static func unlockEscapeMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock.escape_message", defaultValue: "After a failed Touch ID attempt, hold Esc for \(arg1) seconds to request the macOS lock screen.", bundle: bundle, locale: locale)
+        String(localized: "unlock.escape_message", defaultValue: "If you can’t end shielding with Touch ID, hold Esc for \(arg1) seconds to switch to the macOS lock screen.", bundle: bundle, locale: locale)
     }
 
     static func unlockSecureEventInput(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -391,15 +391,15 @@ enum L10n {
     }
 
     static func unlockGuideMessage(_ arg1: Int, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.message", defaultValue: "To unlock, hold any key except Esc for \(arg1) seconds. When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
+        String(localized: "unlock_guide.message", defaultValue: "To end shielding, hold any key except Esc for \(arg1) seconds. When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
     }
 
     static func unlockGuideSelectedKeyMessage(_ arg1: String, _ arg2: String, bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.selected_key_message", defaultValue: "To unlock, hold \(arg1) for \(arg2). When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
+        String(localized: "unlock_guide.selected_key_message", defaultValue: "To end shielding, hold \(arg1) for \(arg2). When you hear the sound, touch the Touch ID sensor.", bundle: bundle, locale: locale)
     }
 
     static func unlockGuideTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "unlock_guide.title", defaultValue: "How to Unlock", bundle: bundle, locale: locale)
+        String(localized: "unlock_guide.title", defaultValue: "How to End Shielding", bundle: bundle, locale: locale)
     }
 
     static func walkthroughBack(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -427,7 +427,7 @@ enum L10n {
     }
 
     static func walkthroughLockMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.lock_message", defaultValue: "This permission lets Tenmaku switch to the macOS lock screen if it can no longer maintain the app lock.", bundle: bundle, locale: locale)
+        String(localized: "walkthrough.lock_message", defaultValue: "This permission lets Tenmaku switch to the macOS lock screen if it can no longer maintain shielding.", bundle: bundle, locale: locale)
     }
 
     static func walkthroughLockTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -451,11 +451,11 @@ enum L10n {
     }
 
     static func walkthroughStartMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.start_message", defaultValue: "Use the menu bar icon to lock.", bundle: bundle, locale: locale)
+        String(localized: "walkthrough.start_message", defaultValue: "You can start shielding from the menu bar icon.", bundle: bundle, locale: locale)
     }
 
     static func walkthroughSummaryTitle(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(localized: "walkthrough.summary_title", defaultValue: "Status", bundle: bundle, locale: locale)
+        String(localized: "walkthrough.summary_title", defaultValue: "Setup Complete", bundle: bundle, locale: locale)
     }
 
     static func walkthroughWelcomeMessage(bundle: Bundle = .main, locale: Locale = .current) -> String {

@@ -77,7 +77,7 @@ enum WalkthroughStep: Int, CaseIterable {
         }
     }
 
-    func message(inputMode: InputProtectionMode, unlockHoldSeconds: Int, escapeHoldSeconds: Int, unlockKey: UnlockKey) -> AttributedString {
+    func message(inputMode: InputProtectionMode) -> AttributedString {
         let text: String
         switch self {
         case .welcome:
@@ -89,13 +89,7 @@ enum WalkthroughStep: Int, CaseIterable {
         case .postEvent:
             text = L10n.walkthroughLockMessage()
         case .summary:
-            let unlock = UnlockGuide.touchIDMessage(seconds: unlockHoldSeconds, unlockKey: unlockKey)
-            let escape = UnlockGuide.escapeMessage(seconds: escapeHoldSeconds, inputMode: inputMode)
-            var summary = AttributedString(L10n.walkthroughStartMessage() + "\n" + unlock + "\n")
-            var escapeText = AttributedString(escape)
-            escapeText.inlinePresentationIntent = .stronglyEmphasized
-            summary.append(escapeText)
-            return summary
+            return AttributedString(L10n.walkthroughStartMessage())
         }
         return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
@@ -125,10 +119,6 @@ enum WalkthroughStep: Int, CaseIterable {
 
 struct WalkthroughView: View {
     @AppStorage(DefaultsKey.walkthroughCompleted) private var completed = false
-    @AppStorage(DefaultsKey.unlockKey) private var unlockKey = UnlockKey.any
-    @AppStorage(DefaultsKey.customUnlockKeyEnabled) private var customUnlockKeyEnabled: Bool?
-    @AppStorage(DefaultsKey.unlockHoldSeconds) private var unlockHoldSeconds = defaultUnlockHoldSeconds
-    @AppStorage(DefaultsKey.escapeHoldSeconds) private var escapeHoldSeconds = defaultEscapeHoldSeconds
     @State private var inputMode: InputProtectionMode = .selected
     @State private var step: WalkthroughStep = .welcome
     @State private var permissions: [WalkthroughStep: PermissionState] = [:]
@@ -140,9 +130,7 @@ struct WalkthroughView: View {
                 header
                 Text(step == .inputMonitoring ? inputMode.permissionTitle : step.title)
                     .font(.title2.weight(.semibold))
-                Text(step.message(inputMode: inputMode, unlockHoldSeconds: unlockHoldSeconds,
-                                  escapeHoldSeconds: escapeHoldSeconds,
-                                  unlockKey: UnlockKeyPreference(savedKey: unlockKey, customEnabled: customUnlockKeyEnabled).effectiveKey))
+                Text(step.message(inputMode: inputMode))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

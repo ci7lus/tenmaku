@@ -332,13 +332,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このログインセッションからは管理者権限のヘルパーを操作できません。ロックを開始したセッションに戻ってください。"
+            "value": "このログインセッションからは管理者権限のヘルパーを操作できません。遮蔽を開始したセッションに戻ってください。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This login session cannot control the helper. Return to the session that started the lock."
+            "value": "This login session cannot control the helper. Return to the session that started shielding."
           }
         }
       }
@@ -368,13 +368,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "一般設定で Touch ID の解除キーを選び直してください。"
+            "value": "一般設定で「遮蔽解除キー」を選び直してください。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose a Touch ID unlock key again in General settings."
+            "value": "Choose the Shielding Release Key again in General settings."
           }
         }
       }
@@ -422,13 +422,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックの処理で不明なエラーが発生しました"
+            "value": "遮蔽の処理で不明なエラーが発生しました"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "An unknown lock error occurred."
+            "value": "An unknown shielding error occurred."
           }
         }
       }
@@ -458,13 +458,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロック中にマウスとキーボードの入力をブロックするため、監視とアクセシビリティを許可してください。Secure Event Inputもブロックしたい場合は、戻ってヘルパーを導入してください。"
+            "value": "遮蔽中にマウスとキーボードの入力をブロックするため、監視とアクセシビリティを許可してください。Secure Event Inputもブロックしたい場合は、戻ってヘルパーを導入してください。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow Input Monitoring and Accessibility to block keyboard and mouse input while locked. To also block input during Secure Event Input, go back and install the helper."
+            "value": "Allow Input Monitoring and Accessibility to block keyboard and mouse input while shielding is active. To also block input during Secure Event Input, go back and install the helper."
           }
         }
       }
@@ -560,7 +560,7 @@
       }
     },
     "menu.handing_off": {
-      "comment": "The argument is the localized reason for switching to the lock screen.",
+      "comment": "The argument is the localized reason for handing off to the macOS lock screen.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -578,25 +578,25 @@
       }
     },
     "menu.idle": {
-      "comment": "App lock status.",
+      "comment": "Shielding status.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "未ロック"
+            "value": "遮蔽なし"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unlocked"
+            "value": "Shielding Off"
           }
         }
       }
     },
     "menu.interrupted": {
-      "comment": "The app lock is suspended while macOS is locked.",
+      "comment": "Shielding is suspended while macOS is locked.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -650,37 +650,37 @@
       }
     },
     "menu.shielded": {
-      "comment": "App lock status.",
+      "comment": "Shielding status.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロック中"
+            "value": "遮蔽中"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locked"
+            "value": "Shielding On"
           }
         }
       }
     },
     "menu.starting": {
-      "comment": "App lock status.",
+      "comment": "Shielding status.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを開始しています…"
+            "value": "遮蔽を開始しています…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locking…"
+            "value": "Starting Shielding…"
           }
         }
       }
@@ -728,13 +728,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "解除できませんでした: %@"
+            "value": "遮蔽を解除できませんでした: %@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not unlock: %@"
+            "value": "Could not end shielding: %@"
           }
         }
       }
@@ -938,7 +938,7 @@
       }
     },
     "protection.escape_held": {
-      "comment": "Reason the user requested a switch to the lock screen.",
+      "comment": "Reason the user requested a switch to the macOS lock screen.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -956,7 +956,7 @@
       }
     },
     "protection.gamma_lost": {
-      "comment": "Reason the app lock failed.",
+      "comment": "Reason shielding failed.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -974,7 +974,7 @@
       }
     },
     "protection.input_lost": {
-      "comment": "Reason the app lock failed.",
+      "comment": "Reason shielding failed.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -1028,7 +1028,7 @@
       }
     },
     "protection.mirrored": {
-      "comment": "Displays switched to mirroring while the app was locked.",
+      "comment": "Displays switched to mirroring while shielding was active.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -1052,13 +1052,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ミラー表示の間はロックを開始できません"
+            "value": "ミラー表示の間は遮蔽を開始できません"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cannot lock while display mirroring is on."
+            "value": "Cannot start shielding while display mirroring is on."
           }
         }
       }
@@ -1088,31 +1088,31 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを開始"
+            "value": "遮蔽を開始"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lock"
+            "value": "Start Shielding"
           }
         }
       }
     },
     "protection.state_unknown": {
-      "comment": "Could not restore the app lock.",
+      "comment": "Could not retrieve shielding status again.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックの状態を確認できませんでした"
+            "value": "遮蔽の状態を確認できませんでした"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not verify the lock status."
+            "value": "Could not verify the shielding status."
           }
         }
       }
@@ -1124,19 +1124,19 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを開始するにはTouch IDが使える必要があります。システム設定でTouch IDを設定するか、macOSにパスワードでサインインしてからやり直してください。"
+            "value": "遮蔽を開始するにはTouch IDが使える必要があります。システム設定でTouch IDを設定するか、macOSにパスワードでサインインしてからやり直してください。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touch ID must be available to start the lock. Set up Touch ID in System Settings or sign in to macOS with your password, then try again."
+            "value": "Touch ID must be available to start shielding. Set up Touch ID in System Settings or sign in to macOS with your password, then try again."
           }
         }
       }
     },
     "protection.touch_id_unavailable": {
-      "comment": "The user must hold Esc to lock macOS.",
+      "comment": "Instructions for holding Esc to request the macOS lock screen.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -1160,13 +1160,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを解除…"
+            "value": "遮蔽を解除…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unlock…"
+            "value": "End Shielding…"
           }
         }
       }
@@ -1178,13 +1178,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tenmakuのロックを解除します"
+            "value": "Tenmakuの遮蔽を解除します"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unlock Tenmaku"
+            "value": "End Tenmaku shielding"
           }
         }
       }
@@ -1196,7 +1196,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "macOS本体ロック遷移のホールド時間"
+            "value": "Escキーのホールド時間"
           }
         },
         "en": {
@@ -1208,19 +1208,19 @@
       }
     },
     "settings.escape_hold_message": {
-      "comment": "Separate from the normal Touch ID release hold duration. Changes take effect at the next lock.",
+      "comment": "Separate from the Touch ID release hold duration. Changes take effect the next time shielding starts.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Escを長押ししてmacOSのロック画面へ移るまでの秒数です。Touch IDが無効化された場合などに用います。"
+            "value": "遮蔽中、ここで指定した秒数Escを長押しすると、macOSのロックに遷移します。Touch IDが何かしらの制限で使えない場合などに用います。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "How long to hold Esc before switching to the macOS lock screen. Use this when Touch ID is disabled or otherwise unavailable."
+            "value": "While shielding is active, hold Esc for the number of seconds set here to switch to the macOS lock screen. Use this when Touch ID is unavailable, for example due to a restriction."
           }
         }
       }
@@ -1268,13 +1268,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touch ID解除開始キーのホールド時間"
+            "value": "遮蔽解除キーのホールド時間"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold Duration to Unlock"
+            "value": "Hold Duration for the Shielding Release Key"
           }
         }
       }
@@ -1286,13 +1286,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "キーで指定した秒数だけ長押しすると、Touch IDでの認証が始まります。"
+            "value": "遮蔽中、ここで指定した秒数遮蔽解除キーを長押しすると、Touch ID認証に遷移します。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold the unlock key for the number of seconds set here to start Touch ID authentication."
+            "value": "While shielding is active, hold the shielding release key for the number of seconds set here to start Touch ID authentication."
           }
         }
       }
@@ -1334,13 +1334,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touch ID解除開始キー"
+            "value": "遮蔽解除キー"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touch ID Unlock Key"
+            "value": "Shielding Release Key"
           }
         }
       }
@@ -1412,7 +1412,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Record a Touch ID Unlock Key"
+            "value": "Record a Touch ID Key"
           }
         }
       }
@@ -1568,13 +1568,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "変更は次のロックから有効です。"
+            "value": "変更は次の遮蔽から有効です。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Changes apply the next time you lock."
+            "value": "Changes apply the next time you start shielding."
           }
         }
       }
@@ -1706,13 +1706,13 @@
       }
     },
     "unlock.escape_message": {
-      "comment": "The argument is the Esc hold duration for this lock in seconds. Used on the setup completion screen and in the guide shown before starting.",
+      "comment": "Guide shown before shielding starts. The argument is the Esc hold duration for this lock in seconds.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touch IDで解除できなかった後は、Escを%lld秒間押し続けるとmacOSのロック画面への切り替えを要求できます。"
+            "value": "Touch IDで解除できなかった場合は、Escを%lld秒間押し続けるとmacOSのロック画面へ遷移します。"
           }
         },
         "en": {
@@ -1721,13 +1721,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "After a failed Touch ID attempt, hold Esc for %lld second to request the macOS lock screen."
+                  "value": "If you can’t end shielding with Touch ID, hold Esc for %lld second to switch to the macOS lock screen."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "After a failed Touch ID attempt, hold Esc for %lld seconds to request the macOS lock screen."
+                  "value": "If you can’t end shielding with Touch ID, hold Esc for %lld seconds to switch to the macOS lock screen."
                 }
               }
             }
@@ -1754,7 +1754,7 @@
       }
     },
     "unlock_guide.hide_next_time": {
-      "comment": "Checkbox to skip the guide for future locks.",
+      "comment": "Checkbox to skip the guide the next time shielding starts.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -1778,7 +1778,7 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを解除するには、Esc以外のキーを%lld秒間押し続け、音が鳴ったらTouch IDに触れてください。"
+            "value": "遮蔽を解除するには、Esc以外のキーを%lld秒間押し続け、音が鳴ったらTouch IDに触れてください。"
           }
         },
         "en": {
@@ -1787,13 +1787,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "To unlock, hold any key except Esc for %lld second. When you hear the sound, touch the Touch ID sensor."
+                  "value": "To end shielding, hold any key except Esc for %lld second. When you hear the sound, touch the Touch ID sensor."
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "To unlock, hold any key except Esc for %lld seconds. When you hear the sound, touch the Touch ID sensor."
+                  "value": "To end shielding, hold any key except Esc for %lld seconds. When you hear the sound, touch the Touch ID sensor."
                 }
               }
             }
@@ -1808,13 +1808,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを解除するには、%@キーを%@間押し続け、音が鳴ったらTouch IDに触れてください。"
+            "value": "遮蔽を解除するには、%@キーを%@間押し続け、音が鳴ったらTouch IDに触れてください。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To unlock, hold %@ for %@. When you hear the sound, touch the Touch ID sensor."
+            "value": "To end shielding, hold %@ for %@. When you hear the sound, touch the Touch ID sensor."
           }
         }
       }
@@ -1826,13 +1826,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックの解除方法"
+            "value": "遮蔽の解除方法"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "How to Unlock"
+            "value": "How to End Shielding"
           }
         }
       }
@@ -1946,19 +1946,19 @@
       }
     },
     "walkthrough.lock_message": {
-      "comment": "Normal release uses Touch ID. This action locks macOS after a failure.",
+      "comment": "Permission to lock macOS when shielding cannot be maintained.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ロックを続けられなくなったときに、macOSの画面をロックするために使います。"
+            "value": "遮蔽を続けられなくなったときに、macOSの画面をロックするために使います。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "This permission lets Tenmaku switch to the macOS lock screen if it can no longer maintain the app lock."
+            "value": "This permission lets Tenmaku switch to the macOS lock screen if it can no longer maintain shielding."
           }
         }
       }
@@ -2060,13 +2060,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "メニューのアイコンからロックを開始します。"
+            "value": "メニューバーのアイコンから遮蔽を開始できます。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Use the menu bar icon to lock."
+            "value": "You can start shielding from the menu bar icon."
           }
         }
       }
@@ -2078,13 +2078,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "状態"
+            "value": "セットアップ完了"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Status"
+            "value": "Setup Complete"
           }
         }
       }
