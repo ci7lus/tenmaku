@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Test and archive
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Check localization
+        run: scripts/check-localization.sh
+
+      - name: Run SwiftPM tests
+        run: swift test
+
+      - name: Build unsigned XCArchive
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: scripts/build.sh --archive "$RUNNER_TEMP/Tenmaku.xcarchive"
+
+      - name: Create XCArchive ZIP
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$RUNNER_TEMP/Tenmaku.xcarchive" "$RUNNER_TEMP/Tenmaku.xcarchive.zip"
+
+      - name: Upload XCArchive ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/Tenmaku.xcarchive.zip
+          if-no-files-found: error
+          archive: false
+
+  release:
+    name: Attach unsigned XCArchive to release
+    if: github.ref_type == 'tag' && !github.event.deleted
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref }}
+    steps:
+      - name: Download XCArchive ZIP
+        uses: actions/download-artifact@v8
+        with:
+          name: Tenmaku.xcarchive.zip
+          path: ${{ runner.temp }}
+          skip-decompress: true
+
+      - name: Upload XCArchive ZIP to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: ${{ github.ref_name }}
+          ARCHIVE_ZIP: ${{ runner.temp }}/Tenmaku.xcarchive.zip
+        run: |
+          test -s "$ARCHIVE_ZIP"
+          if ! gh release view -- "$TAG_NAME" >/dev/null 2>&1; then
+            gh release create --verify-tag \
+              --title "$TAG_NAME" \
+              --notes "Release $TAG_NAME" \
+              -- "$TAG_NAME" \
+              || gh release view -- "$TAG_NAME" >/dev/null
+          fi
+
+          gh release upload --clobber -- "$TAG_NAME" "$ARCHIVE_ZIP"
