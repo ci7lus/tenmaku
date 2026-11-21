@@ -86,6 +86,14 @@ public func exitWhenIdle(_ isIdle: @escaping @Sendable () -> Bool) {
 }
 
 @objc public protocol InputControl: ShieldLayer {
+    /// Read this service's privacy grants without installing a tap or opening a device.
+    func hasInputPermissions(reply: @escaping @Sendable (Bool) -> Void)
+    // Only the system daemon can report whether its keyboard interfaces are free across sessions.
+    @objc optional func canUnregisterHelper(reply: @escaping @Sendable (Bool) -> Void)
+    // Distinct selectors prevent a 0.1.x helper from seizing a pointer during an update.
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void)
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void)
+    func isEngaged(pointerOnly: Bool, reply: @escaping @Sendable (Bool) -> Void)
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void)
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void)
 }

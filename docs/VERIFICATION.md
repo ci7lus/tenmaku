@@ -236,6 +236,60 @@ With gamma, an overlay, and exclusive access to the keyboard and pointing device
 - Touch ID succeeded. The overlay appeared to hide the authentication window.
 - Touch ID authentication also succeeded when only the keyboard was seized (1.76 seconds). It took 1.78 seconds without seizure.
 
+### Built-in trackpad stopped responding after unlock
+
+On 2026-11-21, Codex collected diagnostics from a MacBookPro18,3 running macOS 27.2 (26B123) and Tenmaku 0.1.0 (build 4) with the privileged helper. The user reported that the display returned after a Touch ID unlock. The built-in trackpad gave haptic feedback, but cursor movement, clicks, and two-finger scrolling had no effect. Chrome Remote Desktop still controlled the session.
+
+| Time (JST) | Observation |
+| --- | --- |
+| 03:39:32.750 | The built-in trackpad's HID event service recorded its last event. |
+| 03:39:33.051 | The Tenmaku helper started its XPC listener. |
+| 18:17:58.010 | The kernel logged a close for the trackpad's HID transport device (`0x100000abd`). The close entry carries option `0x1`. |
+| 18:18:03.439 | launchd logged that the helper became inactive. The helper exited with code 0. |
+| 18:31:35 and 18:32:35 | The trackpad's HID event service still reported 2,244,823 pointer events and 371,429 scroll events. The built-in keyboard service recorded events after unlock. |
+
+IORegistry still showed the trackpad and its WindowServer client. The driver reported a later `LastReportTime` on consecutive reads, and the trackpad's HID event totals stayed fixed. No pointer event tap was enabled at the time of inspection. The HID diagnostic output showed that Mouse Keys and the options to ignore the built-in trackpad were off.
+
+The observed unlock failed the input restoration criterion of A09. The diagnostics establish that the trackpad service stopped producing events and stayed in that state after the kernel logged the close and the helper exited. Tenmaku 0.1.0 did not record the return value of `IOHIDDeviceClose`. The condition that prevented the event service from resuming remains unknown. The investigation used the existing incident and did not start another shielding session.
+
+At 18:50 JST, Codex used System Settings to turn on Mouse Keys with the option to ignore the built-in trackpad. Codex then restored both settings to off. The trackpad service reported the same event totals in all 12 samples between 18:51:19 and 18:52:06 JST. The user then confirmed that movement, clicking, and scrolling still had no effect. The event totals were unchanged at 18:55:46 JST.
+
+At 18:57:04 JST, Codex requested system sleep with `pmset sleepnow`. The power log recorded that the display turned off and that HID activity restored full wake at 18:57:28 JST. The trackpad kept the same registry ID. Its event totals and last event were unchanged in all 12 samples between 18:58:04 and 18:58:51 JST. The user reported that movement, clicking, and scrolling still had no effect after wake. A further sample at 19:00:52 JST matched the earlier samples.
+
+At 19:04:57 JST, the same service still reported 2,244,823 pointer events and 371,429 scroll events. On inspection, all three `IOHIDLibUserClient` entries under `Trackpad / Boot` reported `ClientOpened=Yes`, `ClientOptions=0`, `ClientSeized=No` and `ClientSuspended=No`. Their creators were WindowServer, Discord and a Discord helper. The Tenmaku helper's launchd job had exited with code 0. Its absence and the later probe's successful exclusive open are separate evidence against an ongoing grab by Tenmaku. The per-client `ClientSeized` flags alone do not establish device-wide ownership.
+
+The user also tried closing and reopening the lid. The power log recorded clamshell sleep at 20:52:01 JST and full wake at 20:52:09 JST. The user reported that the trackpad still did not work. At 20:52:47 JST, the same trackpad service still reported the 03:39:32 last event and the same pointer and scroll totals.
+
+With the user's approval, a temporary probe running as the current user opened only the built-in SPI trackpad interface (`Trackpad / Boot`, registry ID `0x100000abd`) once with `kIOHIDOptionsTypeSeizeDevice` and immediately closed it with `kIOHIDOptionsTypeNone`. Both calls returned `kIOReturnSuccess`. The kernel recorded both operations at 21:48:06.957 JST. The probe did not open the keyboard or start shielding. By 21:48:43 JST the trackpad service still showed the same event counts and the same last event as before the probe.
+
+The user then tested one-finger movement, a physical click, and two-finger scrolling. None responded. At 21:50:25 JST the service still reported 3,930,546 digitizer events, 2,244,823 pointer events, and 371,429 scroll events. Its last event was still at 03:39:32. The single exclusive open and immediate close did not restore input in this incident.
+
+In a separate test approved by the user, a probe opened only the same trackpad interface nonexclusively and counted incoming HID reports without examining their contents. The user left the trackpad untouched, moved one finger back and forth, then lifted it. The pointer did not move. The cumulative count was zero through 21:53:25 JST, rose to 1,193 between 21:53:26 and 21:53:38, and stayed there through 21:53:54. The probe closed successfully. At 21:54:07 the multitouch event service still showed the same digitizer, pointer and scroll counts and the 03:39:32 last event. The raw interface delivered reports during the trial while the event service showed no new events. The test did not establish whether the reports contained valid contact data or where processing stopped.
+
+A second nonexclusive probe used Japanese voice prompts to distinguish horizontal and vertical movement. The HID interface exposed relative X and Y elements on report ID 2. The probe summed the absolute values delivered for each axis during each 12-second measurement window. The idle and rest windows received no reports. No raw payload or finger trajectory was saved.
+
+| Prompt | Input reports | Sum of absolute X deltas | Sum of absolute Y deltas |
+| --- | ---: | ---: | ---: |
+| Move left and right | 1,455 | 50,025 | 1,934 |
+| Move up and down | 1,454 | 1,083 | 23,557 |
+
+All reports received during those windows were eight bytes long and had ID 2. The relative motion matched the prompted axis. The probe closed successfully. At 21:58:22 JST, the multitouch event service still reported the same event counts and the 03:39:32 last event. These measurements confirm directional motion at the raw interface. They do not identify the device's active mode or establish whether valid multitouch contacts were available. The log entries examined around the original unlock recorded the device close but did not identify a mode transition.
+
+The same Mac retained event-generation statistics from before shielding. In the last interval starting at 03:39:28 JST, the multitouch processor recorded 778 digitizer events and 526 pointer events. No later interval appeared when checked after 22:09 JST. These are processor statistics. A healthy raw HID report capture was unavailable for comparison. The service reported that it was ready, its touch parser was enabled and pointing was enabled. A gesture override was recorded at 03:39:30; neither its writer nor its effect was established. The kernel returned `kIOReturnUnsupported` to an `IOServiceRequestProbe` request directed only at the trackpad HID endpoint. No request was sent to its shared SPI bus.
+
+With an external USB pointing device connected, Codex toggled the setting to ignore the built-in trackpad when a mouse is present. The input service recorded the change at 22:06:51 JST and restoration at 22:07:09. A temporary AppKit window accepted indirect touches under the pointer while a nonexclusive probe counted the same trackpad's HID reports. One-finger movement produced 1,091 raw reports. Two-finger vertical scrolling produced 1,165. All were eight-byte ID 2 reports. The window received no touch, mouse movement or scroll events during either movement window. At 22:09:03 the device's last event was still at 03:39:32. Reapplying Force Click through System Settings also failed to restore physical operation. The service recorded restoration of its original force settings at 22:12:06, and the user confirmed the trackpad was still unresponsive.
+
+#### Recovery without logging out
+
+The user disconnected power, closed the lid on battery and reopened it after about three minutes. The power log recorded entry into `Sleep` at 22:15:03 JST and wake from Deep Idle at 22:18:05 (182 seconds). Both earlier AC trials had entered `DarkWake` and returned to full wake with the same multitouch service. On battery wake, the kernel started a new `AppleMultitouchDevice` (`0x10052d4b9`) and stopped the old one (`0x1002a66d9`). The same WindowServer process created a plugin for the new service and logged pointer movement at 22:18:07. The raw trackpad interface and its parent HID event driver's registry IDs stayed the same. The user confirmed recovery without logging out or rebooting.
+
+| Measurement on the same trackpad HID interface | During failure | After battery sleep |
+| --- | --- | --- |
+| One-finger motion | ID 2, 8 bytes, with relative X/Y movement | ID 2, 76 bytes in the movement window; AppKit delivered mouse movement |
+| Two-finger scrolling | ID 2, 8 bytes; no touch or scroll events in the test window | ID 2, 76–136 bytes; AppKit delivered indirect touch and 486 scroll callbacks |
+
+By 22:20:14 the new service had counted 6,153 digitizer, 3,631 pointer and 1,101 scroll events. Button events also appeared in its generation statistics; the test window did not independently capture a full click. The gesture override recorded at 03:39:30 had the same value after recovery. The observations show a difference in the reports delivered at the raw interface as well as a restart of the multitouch service. They support a failure to resume normal multitouch reporting after the exclusive open. The exact device mode, the component responsible for selecting it, and the conditions necessary for recovery were not established. The duration and power source describe one successful trial, not a minimum or a universal requirement.
+
 ## macOS session lock
 
 We tested how to request and verify a macOS session lock for a possible handoff after a fault.
@@ -262,3 +316,27 @@ We tested how to request and verify a macOS session lock for a possible handoff 
 
   In trial 2, we used `CGWindowListCopyWindowInfo` to log `loginwindow` windows every 5 ms. At 0.08 seconds after the request, the keys changed and a full-screen window (layer 2001) appeared with opacity 0. At 0.27 seconds, the lock screen windows (layers 2003 and 2004) appeared. At 0.75 seconds, the opacity of the layer 2001 window reached 1. We ran each trial once.
 - We did not test handoff to the macOS session lock when the helper stops or Touch ID is unavailable.
+
+### Session tap click trial for 0.2.0
+
+On 2026-11-21 a test app installed an active session event tap for left-button down and up. The filter applied to the two buttons in its own key window. It dropped events with a source PID of zero or less and passed positive PIDs. It did not open any HID devices or change the displays.
+
+- The user tried the Physical button with the built-in trackpad and external mouse. The tap logged five down/up pairs with nonpositive PIDs and dropped all five. The Physical button recorded no activation. The tap did not identify individual devices.
+- Codex Computer Use selected the button labeled Claude once. The app recorded one activation, its status changed to `Received: Claude`, and the tap logged no additional button event. The label identifies the target button; the client was Codex. This result covers that Computer Use action.
+- The production agent uses the same session tap location and PID rule. This trial did not exercise full shielding, Secure Event Input, system-wide cursor movement, scrolling, dragging, or Claude Computer Use. The earlier results with both device types seized do not establish those outcomes for 0.2.0.
+
+We then built and signed 0.2.0 with the repository's test flag (five-minute automatic release). We started shielding through the General settings and confirmed the normal pre-lock guide. The first attempt stopped before shielding because the session input agent lacked Accessibility permission. After the user enabled Accessibility for TenmakuInput, preflight succeeded with only TenmakuHelper visible in the Input Monitoring list.
+
+The app reported shielding active. This second trial used a target window with no event tap of its own. Codex Computer Use clicked the Claude-labeled button once and the target recorded exactly one activation. We placed the pointer over the Physical button and the user tried the built-in trackpad and external mouse. The target recorded no Physical activation. The pointer stayed over the same point in the samples taken while shielding was active. The user held the configured left Shift key, authenticated with Touch ID, and confirmed that movement, clicking and scrolling worked immediately after unlock. Tenmaku returned to its idle state. This trial exercised one lock cycle. Secure Event Input during shielding, Claude, third-party mice beyond the connected receiver, and repeated cycles were not tested.
+
+### Switching the 0.2.0 helper from General settings
+
+On 2026-11-21 we opened General settings in a signed universal 0.2.0 build with shielding off. Selecting Without Helper removed the system job `jp.pronama.tenmaku.helper`. The gamma, cover and session input jobs remained registered in the user's launchd domain. Selecting With Helper registered the system job again. Selecting Without Helper a second time removed it. This Mac had previously approved the helper. The test did not exercise first-time system approval or change the physical displays.
+
+After quitting Tenmaku, a separate test cleanup reset macOS privacy decisions with bundle-scoped `tccutil reset All` for the main app and its four bundled services. The settings switch itself does not reset privacy permissions.
+
+### Setup after a permission change
+
+On 2026-11-21 the Mac retained the completed-setup preference and the input agent was authorized in helperless mode. We reset Accessibility and PostEvent only for the main Tenmaku bundle. The signed 0.2.0 app opened Setup directly at the screen-lock permission step. The page showed permission missing, and Next was disabled.
+
+An initial build polled CoreGraphics posting preflight and continued to show the earlier denial after the user enabled Accessibility. In the revised build the main app checked accessibility trust and HID posting authorization. After the user enabled Tenmaku in System Settings, Setup advanced to its summary with both required permissions marked granted. The main app PID was 69230 before and after the grant. This trial did not start shielding.

@@ -325,6 +325,24 @@
         }
       }
     },
+    "error.input_keyboard_interface": {
+      "comment": "A keyboard interface also exposes other HID collections or has incomplete usage metadata.",
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キーボードだけを取得できない入力機器が接続されています。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A connected device does not expose a separate keyboard interface."
+          }
+        }
+      }
+    },
     "error.input_session_mismatch": {
       "comment": "The connecting session lacks permission for the helper operation.",
       "extractionState": "manual",
@@ -434,7 +452,7 @@
       }
     },
     "input.permission_control": {
-      "comment": "Permissions needed to run without the helper.",
+      "comment": "Permissions needed for input control.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
@@ -470,37 +488,19 @@
       }
     },
     "input.permission_helper_message": {
-      "comment": "TenmakuHelper is the app that needs permission.",
+      "comment": "The helper handles keyboard input. The agent controls pointer input.",
       "extractionState": "manual",
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ヘルパーがキーボードとマウスを取得するために、入力監視を許可してください。"
+            "value": "キーボードの入力を遮蔽するためTenmakuHelperに入力監視を許可してください。マウスとトラックパッドの入力を遮蔽するためTenmakuInputにアクセシビリティを許可してください。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Allow Input Monitoring so the helper can take control of the keyboard and mouse."
-          }
-        }
-      }
-    },
-    "input.permission_monitoring": {
-      "comment": "The macOS Input Monitoring permission.",
-      "extractionState": "manual",
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "入力監視を許可する"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allow Input Monitoring"
+            "value": "Grant TenmakuHelper Input Monitoring access to block keyboard input. Grant TenmakuInput Accessibility access to block mouse and trackpad input."
           }
         }
       }
@@ -753,24 +753,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Allowed"
-          }
-        }
-      }
-    },
-    "permission.helper_required": {
-      "comment": "Helper permissions can be checked after installation.",
-      "extractionState": "manual",
-      "localizations": {
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ヘルパーをインストールしてから確認します"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Checked After Installing Helper"
           }
         }
       }
@@ -1333,6 +1315,74 @@
         }
       }
     },
+    "settings.helper_busy": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーの入力解放を確認できません。押しているキーを離してから、もう一度お試しください。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not confirm the helper released input. Release any held keys and try again."
+          }
+        }
+      }
+    },
+    "settings.helper_still_registered": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパーの登録解除を確認できませんでした。"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not confirm that the helper was unregistered."
+          }
+        }
+      }
+    },
+    "settings.helper": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ヘルパー"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper"
+          }
+        }
+      }
+    },
+    "settings.helper_none": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "なし"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "None"
+          }
+        }
+      }
+    },
     "settings.input_blocking": {
       "comment": "Item label used in Settings and on the setup completion screen.",
       "extractionState": "manual",
@@ -1777,6 +1827,23 @@
         }
       }
     },
+    "settings.unregister_helper": {
+      "extractionState": "manual",
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登録を解除"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unregister"
+          }
+        }
+      }
+    },
     "settings.walkthrough": {
       "comment": "Settings tab name. Use the same translation when referring to the tab in explanatory text.",
       "extractionState": "manual",
@@ -1970,13 +2037,13 @@
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ヘルパーをインストールすると、通常のキーボード操作・マウス操作に加えて、Secure Event Input中も入力を防止することが出来ます。\nいったんスキップして、後からインストールすることも出来ます。"
+            "value": "ヘルパーを導入すると、パスワード欄などでSecure Event Inputが有効な間も物理キーボードの入力を遮断できます。\nいったんスキップして、後からインストールすることも出来ます。"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Installing the helper lets Tenmaku block keyboard and mouse input, including while Secure Event Input is active.\nYou can skip this step and install it later."
+            "value": "Install the helper to block physical keystrokes even when Secure Event Input is active, such as in a password field.\nYou can skip this step and install it later."
           }
         }
       }

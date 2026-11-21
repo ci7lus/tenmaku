@@ -7,7 +7,7 @@
 set -euo pipefail
 
 ROOT=${0:A:h:h}
-VERSION=${VERSION:-0.1.0}
+VERSION=${VERSION:-0.2.0}
 BUILD_NUMBER=${BUILD_NUMBER:-1}
 
 ARCHIVE=

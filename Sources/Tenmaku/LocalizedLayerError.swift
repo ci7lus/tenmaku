@@ -14,6 +14,8 @@ func localizedLayerError(_ error: NSError, bundle: Bundle = .main, locale: Local
             return L10n.errorInputMonitoringStatus(String(format: "0x%08x", status.int32Value), bundle: bundle, locale: locale)
         }
         return L10n.errorInputMonitoringDenied(bundle: bundle, locale: locale)
+    case .inputKeyboardInterface:
+        return L10n.errorInputKeyboardInterface(bundle: bundle, locale: locale)
     case .inputDeviceSeizeFailed:
         return L10n.errorInputDeviceSeizeFailed(bundle: bundle, locale: locale)
     case .inputControlStopped:

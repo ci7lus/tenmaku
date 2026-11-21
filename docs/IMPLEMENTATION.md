@@ -18,7 +18,7 @@ A recommendation is a design proposal that verification has yet to confirm. The 
 | --- | --- | --- |
 | Gamma | Set every entry in the gamma tables of all target displays to zero with `CGSetDisplayTransferByTable`. Read back every 20 ms and rewrite any table that contains a nonzero value. | The owning process exits, another process that changed gamma exits (which also restores gamma on other displays), or the displays reconfigure. |
 | Concealment windows | Show a black window at 100% opacity on each display only during a failure. Use the `.screenSaver` level and display the windows in all Spaces and full-screen apps. Ignore mouse events. | The owning process exits. |
-| Input | The helper seizes physical keyboards and pointing devices with `kIOHIDOptionsTypeSeizeDevice`. Use the registry ID to identify devices that match several criteria as the same device. Exclude devices with a `Transport` of `Virtual`. | The helper exits. |
+| Input | The helper uses `kIOHIDOptionsTypeSeizeDevice` on physical keyboard-only interfaces. The session agent filters pointing events without opening a mouse or trackpad. Exclude devices with a `Transport` of `Virtual` from keyboard acquisition. | The helper exits or the session tap stops filtering. |
 
 While opaque windows are visible, screen captures may show the windows and control may stop.
 
@@ -33,8 +33,8 @@ Separate the gamma and concealment window layers into different processes so one
 | UI (main app) | User | Starts the lock and shows its state. Authenticates with Touch ID through `LAContext`. Requests a session lock by posting Control-Command-Q with `CGEventPost`. Verifies the session lock with `CGSessionCopyCurrentDictionary`, `IOConsoleUsers`, and the `loginwindow` window. |
 | Gamma | User's login session | Owns the gamma layer. |
 | Concealment windows | User's login session | Owns the concealment window layer. |
-| Helper | root (`SMAppService.daemon`) | Owns the input layer. Holds `kIOPMAssertPreventUserIdleDisplaySleep` for as long as it owns the layer. Signals an unlock request when it detects a physical key hold while locked. |
-| User-level input control (without the helper) | User (`SMAppService.agent`) | Owns the session event tap. Passes synthetic input with a positive PID and drops input it cannot distinguish from physical input. Detects key holds, waits for held inputs to be released, and prevents idle sleep. Secure Event Input and some AI operations have limitations. |
+| Helper | root (`SMAppService.daemon`) | Seizes only physical HID interfaces whose primary and advertised usages are keyboard or keypad. Preflight checks access without opening any device. Holds `kIOPMAssertPreventUserIdleDisplaySleep` for as long as it owns the layer. Signals an unlock request when it detects a physical key hold while locked. |
+| User-level input control | User (`SMAppService.agent`) | Owns the session event tap in both configurations. With the helper, subscribes only to pointer events and lets the helper track key holds. Without the helper, also subscribes to keyboard events. Passes synthetic input with a positive PID and drops input it cannot distinguish from physical input. Detects key holds, waits for held inputs to be released, and prevents idle sleep. Secure Event Input and some AI operations have limitations. |
 
 - Recommendation. Register gamma and concealment windows as agents with `SMAppService.agent` so they run independently of the UI process.
 - Recommendation. Keep lock state in one place outside the UI, including start in progress, locked, unlock in progress, fault, and handoff to the session lock. Have the UI read the state each time it starts (A12 in the specification).
@@ -49,10 +49,14 @@ Separate the gamma and concealment window layers into different processes so one
 | --- | --- | --- | --- |
 | Background execution | Helper daemon | Call `SMAppService.daemon(...).register()`. The first request waits for approval. Open settings with `SMAppService.openSystemSettingsLoginItems()`. | The daemon started as root after approval. |
 | Input Monitoring | Helper app | The main app launches the helper app as the user. The helper calls `IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)` and exits. | A dialog appeared and the list gained an entry automatically. Calling from the daemon produced no entry. |
-| Event posting | Main app | Use `CGPreflightPostEventAccess` and `CGRequestPostEventAccess`. | Unverified. The app needs it to request a session lock. |
+| Event posting | Main app | Request event posting and Accessibility. Check Accessibility trust or HID event-posting access when refreshing the grant. | Unverified. The app needs it to request a session lock. |
 
 - The running daemon did not pick up changes to Input Monitoring permission. Recommendation. If a helper starts without permission, have it report the missing permission over XPC and exit so the next connection can relaunch it.
 - Check all permissions before starting. If any are missing, report why and leave the displays and input untouched. See [Start, Unlock, and Failure Handling](SPEC.md#start-unlock-and-failure-handling).
+
+Setup registers the optional helper. General settings can remove an approved or pending registration. Serialize changes with lock startup, restoration, and release. Before unregistering an enabled daemon, confirm it has finished releasing any held keys. Switching modes leaves the login agents and macOS privacy decisions in place.
+
+When opening settings or deciding whether to show Setup at launch, read the grants for the selected helper configuration and the main app. A saved Setup completion flag selects the summary only if the required grants are current. While settings are visible, recheck in sequence, including while System Settings is in front. Read each input service's permissions without starting input filtering. Verify operational readiness separately when starting shielding.
 
 ## Start and unlock sequence
 
@@ -106,7 +110,7 @@ At the end of each stage, run the corresponding acceptance tests from the specif
 These unverified points could change the design.
 
 - Whether the notarized distribution build follows the same daemon registration and Input Monitoring approval steps as the verification build.
-- Device seizure for keys other than Space, modifiers, scrolling, dragging, and external keyboards. Whether an input held across the lock carries over.
+- Keyboard seizure for keys other than Space, modifiers, and external keyboards. Session event filtering for scrolling and dragging. Whether an input held across the lock carries over.
 - Variation in the lock screen fade-in duration and behavior on external displays.
 - Codex and Claude video paths with both displays protected.
 - Waking from sleep and HDR.

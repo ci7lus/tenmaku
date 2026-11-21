@@ -77,7 +77,7 @@ final class LayerFailureTests: XCTestCase {
         withExtendedLifetime(responder) {}
     }
 
-    func testSelectedKeyReachesInputPreflightOverXPC() throws {
+    func testPointerRoleAndSelectedKeyReachInputPreflightOverXPC() throws {
         let responder = FailureResponder(interface: NSXPCInterface(with: InputControl.self))
         let listener = NSXPCListener.anonymous()
         listener.delegate = responder
@@ -93,7 +93,7 @@ final class LayerFailureTests: XCTestCase {
         let input = try XCTUnwrap(connection.remoteObjectProxyWithErrorHandler { error in
             XCTFail("XPC: \(error)")
         } as? InputControl)
-        input.preflight(unlockHoldSeconds: 7, escapeHoldSeconds: 3, unlockKeyUsage: UnlockKey.space.rawValue) { error in
+        input.preflight(unlockHoldSeconds: 7, escapeHoldSeconds: 3, unlockKeyUsage: UnlockKey.space.rawValue, pointerOnly: true) { error in
             XCTAssertNil(error)
             received.fulfill()
         }
@@ -103,6 +103,8 @@ final class LayerFailureTests: XCTestCase {
 }
 
 private final class FailureResponder: NSObject, NSXPCListenerDelegate, CoverControl, InputControl {
+    func hasInputPermissions(reply: @escaping @Sendable (Bool) -> Void) { reply(true) }
+
     private let interface: NSXPCInterface
 
     init(interface: NSXPCInterface = NSXPCInterface(with: CoverControl.self)) {
@@ -127,6 +129,13 @@ private final class FailureResponder: NSObject, NSXPCListenerDelegate, CoverCont
         reply(nil)
     }
 
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
+        XCTAssertTrue(pointerOnly)
+        preflight(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: unlockKeyUsage, reply: reply)
+    }
+
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
+    func isEngaged(pointerOnly: Bool, reply: @escaping @Sendable (Bool) -> Void) { reply(false) }
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
     func release(afterSessionLock: Bool, reply: @escaping @Sendable (NSError?) -> Void) { reply(nil) }
