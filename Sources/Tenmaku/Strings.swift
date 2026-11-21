@@ -54,6 +54,10 @@ enum L10n {
         String(format: bundle.localizedString(forKey: "error.input_devices_missing", value: nil, table: nil), locale: locale, arguments: [])
     }
 
+    static func errorInputKeyboardInterface(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(format: bundle.localizedString(forKey: "error.input_keyboard_interface", value: nil, table: nil), locale: locale, arguments: [])
+    }
+
     static func errorInputListenDenied(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(format: bundle.localizedString(forKey: "error.input_listen_denied", value: nil, table: nil), locale: locale, arguments: [])
     }
@@ -110,10 +114,6 @@ enum L10n {
         String(format: bundle.localizedString(forKey: "input.permission_helper_message", value: nil, table: nil), locale: locale, arguments: [])
     }
 
-    static func inputPermissionMonitoring(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(format: bundle.localizedString(forKey: "input.permission_monitoring", value: nil, table: nil), locale: locale, arguments: [])
-    }
-
     static func inputWithHelper(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(format: bundle.localizedString(forKey: "input.with_helper", value: nil, table: nil), locale: locale, arguments: [])
     }
@@ -168,10 +168,6 @@ enum L10n {
 
     static func permissionGranted(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(format: bundle.localizedString(forKey: "permission.granted", value: nil, table: nil), locale: locale, arguments: [])
-    }
-
-    static func permissionHelperRequired(bundle: Bundle = .main, locale: Locale = .current) -> String {
-        String(format: bundle.localizedString(forKey: "permission.helper_required", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func permissionMissing(bundle: Bundle = .main, locale: Locale = .current) -> String {
@@ -298,6 +294,22 @@ enum L10n {
         String(format: bundle.localizedString(forKey: "settings.general", value: nil, table: nil), locale: locale, arguments: [])
     }
 
+    static func settingsHelper(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(format: bundle.localizedString(forKey: "settings.helper", value: nil, table: nil), locale: locale, arguments: [])
+    }
+
+    static func settingsHelperBusy(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(format: bundle.localizedString(forKey: "settings.helper_busy", value: nil, table: nil), locale: locale, arguments: [])
+    }
+
+    static func settingsHelperNone(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(format: bundle.localizedString(forKey: "settings.helper_none", value: nil, table: nil), locale: locale, arguments: [])
+    }
+
+    static func settingsHelperStillRegistered(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(format: bundle.localizedString(forKey: "settings.helper_still_registered", value: nil, table: nil), locale: locale, arguments: [])
+    }
+
     static func settingsInputBlocking(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(format: bundle.localizedString(forKey: "settings.input_blocking", value: nil, table: nil), locale: locale, arguments: [])
     }
@@ -392,6 +404,10 @@ enum L10n {
 
     static func settingsUnlockKeyUp(bundle: Bundle = .main, locale: Locale = .current) -> String {
         String(format: bundle.localizedString(forKey: "settings.unlock_key_up", value: nil, table: nil), locale: locale, arguments: [])
+    }
+
+    static func settingsUnregisterHelper(bundle: Bundle = .main, locale: Locale = .current) -> String {
+        String(format: bundle.localizedString(forKey: "settings.unregister_helper", value: nil, table: nil), locale: locale, arguments: [])
     }
 
     static func settingsWalkthrough(bundle: Bundle = .main, locale: Locale = .current) -> String {

@@ -54,7 +54,7 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
 
     override init() {
         super.init()
-        let usages = [kHIDUsage_GD_Keyboard, kHIDUsage_GD_Keypad, kHIDUsage_GD_Mouse, kHIDUsage_GD_Pointer]
+        let usages = [kHIDUsage_GD_Keyboard, kHIDUsage_GD_Keypad]
         let matching = usages.map { [kIOHIDDeviceUsagePageKey: kHIDPage_GenericDesktop, kIOHIDDeviceUsageKey: $0] }
         IOHIDManagerSetDeviceMatchingMultiple(manager, matching as CFArray)
         let context = Unmanaged.passUnretained(self).toOpaque()
@@ -72,6 +72,12 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
     }
 
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
+        // Older clients expect this service to protect pointing devices by itself.
+        reply(LayerFailure.inputControlStartFailed.error())
+    }
+
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
+        guard !pointerOnly else { return reply(LayerFailure.inputControlStartFailed.error()) }
         withAuthorizedPeer(reply: reply, denied: LayerFailure.inputSessionMismatch.error()) { [self] peer in
             guard peer.isConsoleUser else { return reply(LayerFailure.inputSessionMismatch.error()) }
             guard UnlockKey(rawValue: unlockKeyUsage) != nil else { return reply(LayerFailure.invalidUnlockKey.error()) }
@@ -79,15 +85,14 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
             guard !engaged else { return reply(nil) }
-            guard let device = physicalDevices().first else { return reply(LayerFailure.inputDevicesMissing.error()) }
-            let result = IOHIDDeviceOpen(device, seizeOption)
-            guard result == kIOReturnSuccess else {
-                reply(LayerFailure.inputMonitoringDenied.error(status: result))
-                // The running daemon does not pick up permission changes. Restart it on the next connection.
+            let devices = physicalDevices()
+            guard devices.allSatisfy(canSeizeKeyboard) else { return reply(LayerFailure.inputKeyboardInterface.error()) }
+            guard !devices.isEmpty else { return reply(LayerFailure.inputDevicesMissing.error()) }
+            guard IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted else {
+                reply(LayerFailure.inputMonitoringDenied.error(status: kIOReturnNotPermitted))
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { exit(0) }
                 return
             }
-            IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone))
             reply(nil)
         }
     }
@@ -97,6 +102,12 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
     }
 
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
+        // Older clients expect this service to protect pointing devices by itself.
+        reply(LayerFailure.inputControlStartFailed.error())
+    }
+
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
+        guard !pointerOnly else { return reply(LayerFailure.inputControlStartFailed.error()) }
         withAuthorizedPeer(reply: reply, denied: LayerFailure.inputSessionMismatch.error()) { [self] peer in
             guard peer.isConsoleUser else { return reply(LayerFailure.inputSessionMismatch.error()) }
             guard let unlockKey = UnlockKey(rawValue: unlockKeyUsage) else { return reply(LayerFailure.invalidUnlockKey.error()) }
@@ -105,6 +116,7 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
             }
             let devices = physicalDevices()
             guard !devices.isEmpty else { return reply(LayerFailure.inputDevicesMissing.error()) }
+            guard devices.allSatisfy(canSeizeKeyboard) else { return reply(LayerFailure.inputKeyboardInterface.error()) }
             holdDurations = durations
             self.unlockKey = unlockKey
             owner = peer
@@ -114,7 +126,7 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
             unlockRequested = false
             escapeRequested = false
             for device in devices where !seize(device) {
-                stop()
+                complete = false
                 return reply(LayerFailure.inputDeviceSeizeFailed.error())
             }
             preventIdleSleep()
@@ -161,6 +173,21 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
 
     func hasProtection(reply: @escaping @Sendable (Bool) -> Void) {
         withAuthorizedPeer(reply: reply, denied: false) { [self] _ in reply(!isIdle()) }
+    }
+
+    func hasInputPermissions(reply: @escaping @Sendable (Bool) -> Void) {
+        withAuthorizedPeer(reply: reply, denied: false) { _ in
+            reply(IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted)
+        }
+    }
+
+    func canUnregisterHelper(reply: @escaping @Sendable (Bool) -> Void) {
+        withAuthorizedPeer(reply: reply, denied: false) { [self] peer in reply(peer.isConsoleUser && isIdle()) }
+    }
+
+    func isEngaged(pointerOnly: Bool, reply: @escaping @Sendable (Bool) -> Void) {
+        guard !pointerOnly else { return reply(false) }
+        isEngaged(reply: reply)
     }
 
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {
@@ -270,7 +297,16 @@ final class InputLayer: NSObject, InputControl, @unchecked Sendable {
         return id
     }
 
+    private func canSeizeKeyboard(_ device: IOHIDDevice) -> Bool {
+        KeyboardInterface.canSeize(
+            primaryPage: IOHIDDeviceGetProperty(device, kIOHIDPrimaryUsagePageKey as CFString) as? Int,
+            primaryUsage: IOHIDDeviceGetProperty(device, kIOHIDPrimaryUsageKey as CFString) as? Int,
+            usages: IOHIDDeviceGetProperty(device, kIOHIDDeviceUsagePairsKey as CFString) as? [[String: Int]]
+        )
+    }
+
     private func seize(_ device: IOHIDDevice) -> Bool {
+        guard canSeizeKeyboard(device) else { return false }
         let id = registryID(device)
         guard seized[id] == nil else { return true }
         guard IOHIDDeviceOpen(device, seizeOption) == kIOReturnSuccess else { return false }

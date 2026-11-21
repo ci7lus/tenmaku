@@ -1,9 +1,20 @@
 import ServiceManagement
 import TenmakuShared
 
+enum HelperRegistration {
+    static var service: SMAppService { .daemon(plistName: LayerService.input.plistName) }
+
+    static func requested(_ status: SMAppService.Status) -> Bool {
+        status == .enabled || status == .requiresApproval
+    }
+}
+
 enum InputProtectionMode: String, CaseIterable, Codable {
     case eventTap
     case helper
+
+    /// Both services must be healthy when the helper owns the keyboard.
+    var requiredInputs: [Self] { self == .helper ? [.helper, .eventTap] : [.eventTap] }
 
     var title: String {
         switch self {
@@ -26,10 +37,6 @@ enum InputProtectionMode: String, CaseIterable, Codable {
         }
     }
 
-    var permissionTitle: String {
-        self == .helper ? L10n.inputPermissionMonitoring() : L10n.inputPermissionControl()
-    }
-
     var permissionMessage: String {
         switch self {
         case .eventTap:
@@ -39,8 +46,11 @@ enum InputProtectionMode: String, CaseIterable, Codable {
         }
     }
 
+    init(helperStatus: SMAppService.Status) {
+        self = helperStatus == .enabled ? .helper : .eventTap
+    }
+
     static var selected: Self {
-        let status = SMAppService.daemon(plistName: LayerService.input.plistName).status
-        return status == .enabled ? .helper : .eventTap
+        Self(helperStatus: HelperRegistration.service.status)
     }
 }

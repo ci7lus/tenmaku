@@ -2,6 +2,9 @@
 
 We tested on physical hardware whether the requirements in the [specification](SPEC.md) could be met using only public APIs. The methods and measurements are in the [verification record](VERIFICATION.md).
 
+
+A signed 0.2.0 test build blocked the built-in trackpad and external mouse clicks during shielding and delivered a Codex Computer Use button activation. After Touch ID unlock, trackpad movement, clicks and scrolling resumed immediately. Claude and Secure Event Input were not tested on this path. [Trial details](VERIFICATION.md#session-tap-click-trial-for-020)
+
 ## Conclusion
 
 The following setup met the main requirements in the specification under the conditions tested.

@@ -4,10 +4,17 @@ import Carbon
 import CoreGraphics
 import Combine
 import Foundation
+import IOKit.hid
 import LocalAuthentication
 import OSLog
 import ServiceManagement
 import TenmakuShared
+
+/// Accessibility grants event posting as well. CoreGraphics preflight can keep returning
+/// its initial denial after the user grants Accessibility to this running process.
+func hasPostEventAccess() -> Bool {
+    AXIsProcessTrusted() || IOHIDCheckAccess(kIOHIDRequestTypePostEvent) == kIOHIDAccessTypeGranted
+}
 
 /// Create the entry in System Settings and show the permission dialog.
 func requestPostEventAccess() {
@@ -24,10 +31,18 @@ enum ProtectionState: Equatable {
     /// The app lock cannot continue. Waiting for the session lock to take effect.
     case handingOff(String)
     case failed(String)
+
+    var allowsConfiguration: Bool {
+        switch self {
+        case .idle, .failed: true
+        case .starting, .shielded, .interrupted, .handingOff: false
+        }
+    }
 }
 
 private struct ActiveLockConfiguration: Codable {
     let inputMode: InputProtectionMode
+    let splitInput: Bool?
 }
 
 private let replyTimeoutSeconds = 3.0
@@ -64,6 +79,7 @@ final class LayerClient {
     private var connectionGeneration = 0
     /// True from the shielding request until release. A disconnect during this interval means the layer is lost.
     private var held = false
+    var pointerOnly: Bool?
     var onLost: (() -> Void)?
 
     init(service: LayerService) {
@@ -114,13 +130,12 @@ final class LayerClient {
 
     func preflight(holdDurations: InputHoldDurations = .standard, unlockKey: UnlockKey = .any) async -> String? {
         await command { layer, reply in
-            if unlockKey == .any {
-                layer.preflight(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: reply)
-            } else if let input = layer as? InputControl {
+            if let pointerOnly {
+                guard let input = layer as? InputControl else { return reply(LayerFailure.inputControlStartFailed.error()) }
                 input.preflight(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds,
-                                unlockKeyUsage: unlockKey.rawValue, reply: reply)
+                                unlockKeyUsage: unlockKey.rawValue, pointerOnly: pointerOnly, reply: reply)
             } else {
-                reply(LayerFailure.inputControlStartFailed.error())
+                layer.preflight(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: reply)
             }
         }
     }
@@ -128,13 +143,12 @@ final class LayerClient {
     func engage(holdDurations: InputHoldDurations = .standard, unlockKey: UnlockKey = .any) async -> String? {
         held = true
         return await command { layer, reply in
-            if unlockKey == .any {
-                layer.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: reply)
-            } else if let input = layer as? InputControl {
+            if let pointerOnly {
+                guard let input = layer as? InputControl else { return reply(LayerFailure.inputControlStartFailed.error()) }
                 input.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds,
-                             unlockKeyUsage: unlockKey.rawValue, reply: reply)
+                                unlockKeyUsage: unlockKey.rawValue, pointerOnly: pointerOnly, reply: reply)
             } else {
-                reply(LayerFailure.inputControlStartFailed.error())
+                layer.engage(unlockHoldSeconds: holdDurations.unlockSeconds, escapeHoldSeconds: holdDurations.escapeSeconds, reply: reply)
             }
         }
     }
@@ -179,7 +193,14 @@ final class LayerClient {
 
     /// Treat a missing reply as unknown.
     func isEngaged() async -> Bool? {
-        await query { $0.isEngaged(reply: $1) }
+        await query { layer, reply in
+            if let pointerOnly {
+                guard let input = layer as? InputControl else { return reply(false) }
+                input.isEngaged(pointerOnly: pointerOnly, reply: reply)
+            } else {
+                layer.isEngaged(reply: reply)
+            }
+        }
     }
 
     func takeUnlockRequest() async -> Bool {
@@ -191,6 +212,20 @@ final class LayerClient {
     }
 
     var isHeld: Bool { held }
+
+    func hasInputPermissions() async -> Bool? {
+        await query { layer, reply in
+            guard let input = layer as? InputControl else { return reply(false) }
+            input.hasInputPermissions(reply: reply)
+        }
+    }
+
+    func canUnregisterHelper() async -> Bool {
+        await query { layer, reply in
+            guard let input = layer as? InputControl, let check = input.canUnregisterHelper else { return reply(false) }
+            check(reply)
+        } == true
+    }
 
     func hasProtection() async -> Bool? {
         let remaining = await query { $0.hasProtection(reply: $1) }
@@ -221,6 +256,9 @@ final class ProtectionController: ObservableObject {
     @Published private(set) var state: ProtectionState = .idle {
         didSet { onChange?(state) }
     }
+    @Published private(set) var helperStatus = HelperRegistration.service.status
+    @Published private(set) var helperChangeFailure: String?
+    @Published private var changingHelper = false
     private(set) var unlockFailure: String?
     var onChange: ((ProtectionState) -> Void)?
     var onBeforeEngage: (() async -> Void)?
@@ -232,10 +270,10 @@ final class ProtectionController: ObservableObject {
         InputProtectionMode.eventTap: LayerClient(service: .sessionInput),
     ]
     private var activeInputs: [LayerClient] = []
-    private var monitor: Task<Void, Never>?
-    private var restoring = false
-    private var stopping = false
-    private var showingUnlockGuide = false
+    @Published private var monitor: Task<Void, Never>?
+    @Published private var restoring = false
+    @Published private var stopping = false
+    @Published private var showingUnlockGuide = false
     private let lockRecordURL: URL
     private var layerRevision = 0
     private var authentication: LAContext?
@@ -316,7 +354,7 @@ final class ProtectionController: ObservableObject {
 
     /// After restarting the UI, read the active layers again. Startup leaves protection in place.
     func restoreIfEngaged() {
-        guard !restoring, monitor == nil, state == .idle else { return }
+        guard !changingHelper, !restoring, monitor == nil, state == .idle else { return }
         restoring = true
         let configuration = (try? Data(contentsOf: lockRecordURL))
             .flatMap { try? JSONDecoder().decode(ActiveLockConfiguration.self, from: $0) }
@@ -337,8 +375,10 @@ final class ProtectionController: ObservableObject {
             let coverHeld = coverRegistered ? await cover.hasProtection() : false
             var inputUnknown = false
             var inputUnhealthy = false
+            let split = configuration?.splitInput == true
             for mode in registeredInputs {
                 let input = inputs[mode]!
+                input.pointerOnly = split ? (mode == .eventTap && configuration?.inputMode == .helper) : nil
                 input.adopt()
                 let engaged = await input.isEngaged()
                 let held = await input.hasProtection()
@@ -359,10 +399,21 @@ final class ProtectionController: ObservableObject {
             if coverRegistered, coverHeld == false {
                 if await cover.restoreCover() == nil { coverEngaged = await cover.isEngaged() }
             }
-            if let mode = configuration?.inputMode, let expected = inputs[mode],
-               !activeInputs.contains(where: { $0 === expected }) {
-                activeInputs.append(expected)
-                inputUnhealthy = true
+            if let mode = configuration?.inputMode {
+                for required in split ? mode.requiredInputs : [mode] {
+                    let expected = inputs[required]!
+                    if !activeInputs.contains(where: { $0 === expected }) {
+                        activeInputs.append(expected)
+                        inputUnhealthy = true
+                    }
+                }
+            }
+            if configuration == nil {
+                // Without the record the UI cannot verify which services or tap mask the lock required.
+                state = .failed(L10n.protectionStateUnknown())
+                watch()
+                handOffToSessionLock(L10n.protectionStateUnknown())
+                return
             }
             if revision != layerRevision || inputUnknown || gammaEngaged == nil || coverEngaged == nil || gammaHeld == nil || coverHeld == nil {
                 state = .failed(L10n.protectionStateUnknown())
@@ -476,8 +527,10 @@ final class ProtectionController: ObservableObject {
         for service in LayerService.agents {
             if let reason = registrationFailure(.agent(plistName: service.plistName)) { return reason }
         }
-        if let reason = registrationFailure(inputService(inputMode)) { return reason }
-        guard CGPreflightPostEventAccess() else {
+        for required in inputMode.requiredInputs {
+            if let reason = registrationFailure(inputService(required)) { return reason }
+        }
+        guard hasPostEventAccess() else {
             requestPostEventAccess()
             return L10n.protectionLockPermissionRequired()
         }
@@ -495,7 +548,48 @@ final class ProtectionController: ObservableObject {
     }
 
     var canQuit: Bool {
-        !restoring && !stopping && !showingUnlockGuide && monitor == nil && (state == .idle || isFailed)
+        state.allowsConfiguration && !restoring && !stopping && !showingUnlockGuide && monitor == nil && !changingHelper
+    }
+
+    func refreshHelperStatus() {
+        let status = HelperRegistration.service.status
+        if helperStatus != status { helperStatus = status }
+    }
+
+    func setHelperEnabled(_ enabled: Bool) async {
+        guard canQuit else { return }
+        changingHelper = true
+        defer {
+            refreshHelperStatus()
+            changingHelper = false
+        }
+        helperChangeFailure = nil
+        let helper = HelperRegistration.service
+        do {
+            if enabled {
+                if !HelperRegistration.requested(helper.status) { try helper.register() }
+                if helper.status == .requiresApproval {
+                    SMAppService.openSystemSettingsLoginItems()
+                } else if helper.status != .enabled {
+                    helperChangeFailure = L10n.permissionNotInstalled()
+                }
+            } else if HelperRegistration.requested(helper.status) {
+                // The daemon can still be draining held keys after the UI has finished unlocking.
+                if helper.status == .enabled {
+                    guard let input = inputs[.helper], await input.canUnregisterHelper() else {
+                        helperChangeFailure = L10n.settingsHelperBusy()
+                        return
+                    }
+                    input.resetIdleConnection()
+                }
+                try await helper.unregister()
+                if HelperRegistration.requested(helper.status) {
+                    helperChangeFailure = L10n.settingsHelperStillRegistered()
+                }
+            }
+        } catch {
+            helperChangeFailure = L10n.protectionRegistrationFailed(error.localizedDescription)
+        }
     }
 
     private var canStart: Bool {
@@ -534,8 +628,11 @@ final class ProtectionController: ObservableObject {
             return
         }
         unlockFailure = nil
-        let input = inputs[mode]!
-        activeInputs = [input]
+        activeInputs = mode.requiredInputs.map { required in
+            let input = inputs[required]!
+            input.pointerOnly = mode == .helper && required == .eventTap
+            return input
+        }
         state = .starting
         Task {
             if let reason = await prepareGammaService() {
@@ -543,10 +640,20 @@ final class ProtectionController: ObservableObject {
                 state = .failed(reason)
                 return
             }
-            if let reason = await input.preflight(holdDurations: holdDurations, unlockKey: unlockKey) {
-                activeInputs = []
-                state = .failed(reason)
-                return
+            for input in activeInputs {
+                if let reason = await input.preflight(holdDurations: holdDurations, unlockKey: unlockKey) {
+                    activeInputs = []
+                    state = .failed(reason)
+                    return
+                }
+            }
+            @MainActor func engageInputs() async -> String? {
+                var firstFailure: String?
+                for input in activeInputs {
+                    let failure = await input.engage(holdDurations: holdDurations, unlockKey: unlockKey)
+                    firstFailure = firstFailure ?? failure
+                }
+                return firstFailure
             }
             // Wait for the startup animation before shielding the physical displays.
             await onBeforeEngage?()
@@ -556,7 +663,7 @@ final class ProtectionController: ObservableObject {
                 return
             }
             do {
-                try saveLockRecord(ActiveLockConfiguration(inputMode: mode))
+                try saveLockRecord(ActiveLockConfiguration(inputMode: mode, splitInput: true))
             } catch {
                 state = .failed(L10n.protectionStateUnknown())
                 activeInputs = []
@@ -571,7 +678,7 @@ final class ProtectionController: ObservableObject {
                     state = .failed(reason)
                 } else {
                     // Let the user hold a key to request authentication even if the black windows are already visible.
-                    _ = await input.engage(holdDurations: holdDurations, unlockKey: unlockKey)
+                    _ = await engageInputs()
                     state = .failed(reason)
                     watch()
                 }
@@ -579,8 +686,9 @@ final class ProtectionController: ObservableObject {
             }
             // Continue to the input layer if gamma fails so the user can request unlock while the black windows are visible.
             let gammaFailure = await gamma.engage()
-            let inputFailure = await input.engage(holdDurations: holdDurations, unlockKey: unlockKey)
-            let inputEngaged = await input.isEngaged()
+            let inputFailure = await engageInputs()
+            var inputEngaged = true
+            for input in activeInputs where await input.isEngaged() != true { inputEngaged = false }
             let gammaEngaged = await gamma.isEngaged()
             let coverEngaged = await cover.isEngaged()
             if let reason = gammaFailure ?? inputFailure {
@@ -705,7 +813,10 @@ final class ProtectionController: ObservableObject {
             if let failure = await input.release() { return failure }
         }
         guard currentSessionIsLocked() == false else { return L10n.errorSessionLockUnconfirmed() }
-        clearStaleButtons()
+        // The split pointer tap starts with all buttons up and drains its own releases.
+        if !activeInputs.contains(where: { $0.pointerOnly == true }) {
+            clearStaleButtons()
+        }
         if let failure = await cover.release() { return failure }
         if let failure = await gamma.release(), await gamma.hasProtection() != false {
             // Resume monitoring the emergency cover until gamma restoration can be confirmed.
@@ -768,7 +879,7 @@ final class ProtectionController: ObservableObject {
                     cancelAuthentication()
                     if state != .interrupted { state = .interrupted }
                 } else if authentication == nil, let sessionInput = inputs[.eventTap],
-                          activeInputs.contains(where: { $0 === sessionInput }), IsSecureEventInputEnabled() {
+                          sessionInput.pointerOnly != true, activeInputs.contains(where: { $0 === sessionInput }), IsSecureEventInputEnabled() {
                     handOffToSessionLock(L10n.errorSecureEventInput())
                     return
                 } else if let reason = degradation(gamma: gammaEngaged == true, cover: coverEngaged == true) {

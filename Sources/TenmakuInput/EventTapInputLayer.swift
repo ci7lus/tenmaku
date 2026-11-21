@@ -2,6 +2,7 @@ import ApplicationServices
 import Carbon
 import CoreGraphics
 import Foundation
+import IOKit.hid
 import IOKit.pwr_mgt
 import TenmakuShared
 
@@ -10,36 +11,50 @@ final class EventTapInputLayer: NSObject, InputControl, @unchecked Sendable {
     private var filter = SessionInputFilter()
     private var tap: CFMachPort?
     private var source: CFRunLoopSource?
+    private var pointerOnly = false
     private var faulted = false
     private var sleepAssertion: IOPMAssertionID?
     private var generation = 0
     private var releaseReplies: [@Sendable (NSError?) -> Void] = []
 
-    private static let eventTypes: [CGEventType] = [
-        .keyDown, .keyUp, .flagsChanged, .mouseMoved,
+    private static let keyTypes: [CGEventType] = [.keyDown, .keyUp, .flagsChanged]
+    private static let pointerTypes: [CGEventType] = [
+        .mouseMoved,
         .leftMouseDown, .leftMouseUp, .leftMouseDragged,
         .rightMouseDown, .rightMouseUp, .rightMouseDragged,
         .otherMouseDown, .otherMouseUp, .otherMouseDragged, .scrollWheel,
     ]
+
+    private static var pressedButtons: Set<Int64> {
+        Set((0..<32).compactMap { number -> Int64? in
+            guard let button = CGMouseButton(rawValue: UInt32(number)),
+                  CGEventSource.buttonState(.hidSystemState, button: button) else { return nil }
+            return Int64(number)
+        })
+    }
 
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, reply: @escaping @Sendable (NSError?) -> Void) {
         preflight(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: UnlockKey.any.rawValue, reply: reply)
     }
 
     func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
+        preflight(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: unlockKeyUsage, pointerOnly: false, reply: reply)
+    }
+
+    func preflight(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             guard UnlockKey(rawValue: unlockKeyUsage) != nil else { return reply(LayerFailure.invalidUnlockKey.error()) }
             guard InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) != nil else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
-            if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
-            if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
-            if IsSecureEventInputEnabled() { return reply(LayerFailure.secureEventInput.error()) }
+            if filter.isEngaged { return reply(self.pointerOnly == pointerOnly && isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
+            if filter.isDraining || (pointerOnly && !Self.pressedButtons.isEmpty) { return reply(LayerFailure.inputControlsHeld.error()) }
+            if !pointerOnly && IsSecureEventInputEnabled() { return reply(LayerFailure.secureEventInput.error()) }
             if let failure = permissionFailure() { return reply(failure) }
             // A tap that includes mouse events can still be created without keyboard permissions, with only the key events removed from its mask.
             let keyboardMask = CGEventMask(1) << CGEventType.keyDown.rawValue | CGEventMask(1) << CGEventType.keyUp.rawValue
             guard let probe = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
-                options: .defaultTap, eventsOfInterest: keyboardMask,
+                options: .defaultTap, eventsOfInterest: pointerOnly ? CGEventMask(1) << CGEventType.leftMouseDown.rawValue : keyboardMask,
                 callback: { _, _, event, _ in Unmanaged.passUnretained(event) }, userInfo: nil),
                   let probeSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, probe, 0) else {
                 return reply(LayerFailure.inputPermissionsMissing.error())
@@ -57,16 +72,21 @@ final class EventTapInputLayer: NSObject, InputControl, @unchecked Sendable {
     }
 
     func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, reply: @escaping @Sendable (NSError?) -> Void) {
+        engage(unlockHoldSeconds: unlockHoldSeconds, escapeHoldSeconds: escapeHoldSeconds, unlockKeyUsage: unlockKeyUsage, pointerOnly: false, reply: reply)
+    }
+
+    func engage(unlockHoldSeconds: Double, escapeHoldSeconds: Double, unlockKeyUsage: Int, pointerOnly: Bool, reply: @escaping @Sendable (NSError?) -> Void) {
         DispatchQueue.main.async { [self] in
             guard let unlockKey = UnlockKey(rawValue: unlockKeyUsage) else { return reply(LayerFailure.invalidUnlockKey.error()) }
             guard let durations = InputHoldDurations(unlockSeconds: unlockHoldSeconds, escapeSeconds: escapeHoldSeconds) else {
                 return reply(LayerFailure.invalidUnlockHold.error())
             }
-            if filter.isEngaged { return reply(isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
-            if filter.isDraining { return reply(LayerFailure.inputControlsHeld.error()) }
-            if IsSecureEventInputEnabled() { return reply(LayerFailure.secureEventInput.error()) }
+            if filter.isEngaged { return reply(self.pointerOnly == pointerOnly && isHealthy ? nil : LayerFailure.inputControlStopped.error()) }
+            if filter.isDraining || (pointerOnly && !Self.pressedButtons.isEmpty) { return reply(LayerFailure.inputControlsHeld.error()) }
+            if !pointerOnly && IsSecureEventInputEnabled() { return reply(LayerFailure.secureEventInput.error()) }
             if let failure = permissionFailure() { return reply(failure) }
-            let mask = Self.eventTypes.reduce(CGEventMask(0)) { $0 | CGEventMask(1) << $1.rawValue }
+            let types = pointerOnly ? Self.pointerTypes : Self.keyTypes + Self.pointerTypes
+            let mask = types.reduce(CGEventMask(0)) { $0 | CGEventMask(1) << $1.rawValue }
             guard let newTap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap,
                 options: .defaultTap, eventsOfInterest: mask,
                 callback: { _, type, event, context in
@@ -82,15 +102,16 @@ final class EventTapInputLayer: NSObject, InputControl, @unchecked Sendable {
             tap = newTap
             source = newSource
             faulted = false
-            let keys = Set((0..<128).compactMap { code -> CGKeyCode? in
+            self.pointerOnly = pointerOnly
+            let keys: Set<CGKeyCode> = pointerOnly ? [] : Set((0..<128).compactMap { code -> CGKeyCode? in
                 let key = CGKeyCode(code)
                 return CGEventSource.keyState(.hidSystemState, key: key) ? key : nil
             })
-            let buttons = Set((0..<32).compactMap { number -> Int64? in
-                guard let button = CGMouseButton(rawValue: UInt32(number)),
-                      CGEventSource.buttonState(.hidSystemState, button: button) else { return nil }
-                return Int64(number)
-            })
+            let buttons = Self.pressedButtons
+            if pointerOnly && !buttons.isEmpty {
+                removeTap()
+                return reply(LayerFailure.inputControlsHeld.error())
+            }
             filter = SessionInputFilter(holdDurations: durations, unlockKey: unlockKey)
             filter.engage(pressedKeys: keys, pressedButtons: buttons)
             CFRunLoopAddSource(CFRunLoopGetMain(), newSource, .commonModes)
@@ -127,6 +148,10 @@ final class EventTapInputLayer: NSObject, InputControl, @unchecked Sendable {
         }
     }
 
+    func isEngaged(pointerOnly: Bool, reply: @escaping @Sendable (Bool) -> Void) {
+        DispatchQueue.main.async { [self] in reply(filter.isEngaged && self.pointerOnly == pointerOnly && isHealthy) }
+    }
+
     func isEngaged(reply: @escaping @Sendable (Bool) -> Void) {
         DispatchQueue.main.async { [self] in reply(filter.isEngaged && isHealthy) }
     }
@@ -150,11 +175,17 @@ final class EventTapInputLayer: NSObject, InputControl, @unchecked Sendable {
         return !faulted && CFMachPortIsValid(tap) && CGEvent.tapIsEnabled(tap: tap) && permissionFailure() == nil
     }
 
+    func hasInputPermissions(reply: @escaping @Sendable (Bool) -> Void) {
+        DispatchQueue.main.async { [self] in reply(permissionFailure() == nil) }
+    }
+
     private func permissionFailure() -> NSError? {
-        guard AXIsProcessTrusted(), CGPreflightPostEventAccess() else {
+        guard AXIsProcessTrusted() else {
             return LayerFailure.inputAccessibilityDenied.error()
         }
-        guard CGPreflightListenEventAccess() else { return LayerFailure.inputListenDenied.error() }
+        guard IOHIDCheckAccess(kIOHIDRequestTypeListenEvent) == kIOHIDAccessTypeGranted else {
+            return LayerFailure.inputListenDenied.error()
+        }
         return nil
     }
 

@@ -37,18 +37,6 @@ enum PermissionState: Equatable {
         case .notRequired, .unavailable: .secondary
         }
     }
-
-    static func inputMonitoringDuringRefresh(
-        mode: InputProtectionMode,
-        isRegistered: Bool,
-        previousMode: InputProtectionMode,
-        previous: Self?
-    ) -> Self? {
-        if isRegistered {
-            return mode == previousMode ? previous : nil
-        }
-        return mode == .eventTap ? .missing : .unavailable(L10n.permissionHelperRequired())
-    }
 }
 
 enum WalkthroughStep: Int, CaseIterable {
@@ -74,7 +62,7 @@ enum WalkthroughStep: Int, CaseIterable {
         switch self {
         case .welcome: L10n.walkthroughWelcomeTitle()
         case .helper: L10n.walkthroughHelperTitle()
-        case .inputMonitoring: L10n.inputPermissionMonitoring()
+        case .inputMonitoring: L10n.inputPermissionControl()
         case .postEvent: L10n.walkthroughLockTitle()
         case .summary: L10n.walkthroughSummaryTitle()
         }
@@ -106,38 +94,21 @@ enum WalkthroughStep: Int, CaseIterable {
         return (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(text)
     }
-
-    @MainActor
-    var permission: PermissionState? {
-        switch self {
-        case .welcome, .inputMonitoring, .summary:
-            nil
-        case .helper:
-            switch SMAppService.daemon(plistName: LayerService.input.plistName).status {
-            case .enabled: .granted
-            case .requiresApproval: .needsApproval
-            // Services that have never been registered can also return .notFound.
-            case .notRegistered, .notFound: .missing
-            @unknown default: .unavailable(L10n.permissionUnknown())
-            }
-        case .postEvent:
-            CGPreflightPostEventAccess() ? .granted : .missing
-        }
-    }
 }
 
 struct WalkthroughView: View {
+    @ObservedObject var protection: ProtectionController
     @AppStorage(DefaultsKey.walkthroughCompleted) private var completed = false
-    @State private var inputMode: InputProtectionMode = .selected
-    @State private var step: WalkthroughStep = .welcome
-    @State private var permissions: [WalkthroughStep: PermissionState] = [:]
-    @State private var refreshGeneration = 0
+    @ObservedObject var setup: WalkthroughModel
+    private var step: WalkthroughStep { setup.step }
+    private var inputMode: InputProtectionMode { setup.permissions.mode }
+    private var permissions: WalkthroughPermissions { setup.permissions }
 
     var body: some View {
         VStack(spacing: 0) {
             VStack(spacing: 14) {
                 header
-                Text(step == .inputMonitoring ? inputMode.permissionTitle : step.title)
+                Text(step.title)
                     .font(.title2.weight(.semibold))
                 Text(step.message(inputMode: inputMode))
                     .multilineTextAlignment(.center)
@@ -153,6 +124,9 @@ struct WalkthroughView: View {
                         .foregroundStyle(permission.color)
                 }
                 action
+                if step == .helper, let failure = protection.helperChangeFailure {
+                    Text(failure).foregroundStyle(.secondary)
+                }
             }
             .padding(.horizontal, 40)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -166,23 +140,17 @@ struct WalkthroughView: View {
                 }
                 if step == .summary {
                     Button(L10n.walkthroughDone(), action: finish)
+                        .disabled(permissions.firstMissing != nil)
                         .keyboardShortcut(.defaultAction)
                 } else {
                     Button(L10n.walkthroughNext()) { move(by: 1) }
+                        .disabled((step == .inputMonitoring || step == .postEvent) && permissions[step] != .granted)
                         .keyboardShortcut(.defaultAction)
                 }
             }
             .padding(16)
         }
         .frame(width: 520, height: 440)
-        .onAppear {
-            if completed { step = .summary }
-            refresh()
-        }
-        .onChange(of: step) { _ in refresh() }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
-            refresh()
-        }
     }
 
     @ViewBuilder
@@ -230,14 +198,18 @@ struct WalkthroughView: View {
         case .helper where permissions[.helper] == .needsApproval:
             Button(L10n.walkthroughOpenLoginItems()) { SMAppService.openSystemSettingsLoginItems() }
         case .helper where permissions[.helper] == .missing:
-            Button(L10n.walkthroughInstall(), action: installHelper)
+            Button(L10n.walkthroughInstall()) {
+                Task {
+                    await protection.setHelperEnabled(true)
+                }
+            }
+            .disabled(!protection.canQuit)
         case .inputMonitoring:
             Button(L10n.walkthroughRequestPermission(), action: requestInputMonitoring)
-                .disabled(permissions[.inputMonitoring] != .missing)
+                .disabled(permissions[.inputMonitoring] == .granted)
         case .postEvent:
             Button(L10n.walkthroughRequestPermission()) {
                 requestPostEventAccess()
-                refresh()
             }
             .disabled(permissions[.postEvent] == .granted)
         default:
@@ -257,55 +229,28 @@ struct WalkthroughView: View {
 
     private func move(by offset: Int) {
         if let next = WalkthroughStep(rawValue: step.rawValue + offset) {
-            step = next
+            setup.step = next
         }
     }
 
     private func finish() {
+        guard permissions.firstMissing == nil else { return }
         completed = true
         NSApp.keyWindow?.close()
     }
 
-    private func installHelper() {
-        let helper = SMAppService.daemon(plistName: LayerService.input.plistName)
-        try? helper.register()
-        if helper.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
-        refresh()
-    }
-
     // The daemon cannot request permission. Launch the helper app as the user.
     private func requestInputMonitoring() {
-        if inputMode == .eventTap {
-            let agent = SMAppService.agent(plistName: LayerService.sessionInput.plistName)
-            try? agent.register()
-            if agent.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
-        }
-        let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/Helpers/\(inputMode.appName).app")
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.arguments = [inputMode == .helper ? requestInputMonitoringArgument : requestSessionInputAccessArgument]
-        NSWorkspace.shared.openApplication(at: helper, configuration: configuration)
-    }
-
-    private func refresh() {
-        refreshGeneration += 1
-        let generation = refreshGeneration
-        let mode = InputProtectionMode.selected
-        let previousMode = inputMode
-        inputMode = mode
-        for item in WalkthroughStep.permissionSteps where item != .inputMonitoring {
-            permissions[item] = item.permission
-        }
-        let registered = mode == .helper
-            ? permissions[.helper] == .granted
-            : SMAppService.agent(plistName: mode.service.plistName).status == .enabled
-        permissions[.inputMonitoring] = PermissionState.inputMonitoringDuringRefresh(
-            mode: mode, isRegistered: registered, previousMode: previousMode, previous: permissions[.inputMonitoring]
-        )
-        guard registered else { return }
-        Task {
-            let failure = await LayerClient(service: mode.service).preflight()
-            guard generation == refreshGeneration, mode == inputMode else { return }
-            permissions[.inputMonitoring] = failure == nil ? .granted : .missing
+        let agent = SMAppService.agent(plistName: LayerService.sessionInput.plistName)
+        if agent.status != .enabled { try? agent.register() }
+        if agent.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+        for mode in inputMode.requiredInputs {
+            let app = Bundle.main.bundleURL.appendingPathComponent("Contents/Library/Helpers/\(mode.appName).app")
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.createsNewApplicationInstance = true
+            configuration.activates = false
+            configuration.arguments = [mode == .helper ? requestInputMonitoringArgument : requestSessionInputAccessArgument]
+            NSWorkspace.shared.openApplication(at: app, configuration: configuration)
         }
     }
 }

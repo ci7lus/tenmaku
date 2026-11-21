@@ -21,9 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusMenu = StatusMenu(protection: protection, openSettings: { [settings] in settings.show() })
         protection.restoreIfEngaged()
-        if !UserDefaults.standard.bool(forKey: DefaultsKey.walkthroughCompleted) {
-            settings.show(tab: .walkthrough)
-        }
+        settings.show(onlyIfNeeded: true)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

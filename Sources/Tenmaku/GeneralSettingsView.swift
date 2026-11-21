@@ -1,3 +1,4 @@
+import ServiceManagement
 import SwiftUI
 import TenmakuShared
 
@@ -12,6 +13,24 @@ struct GeneralSettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
+                Section {
+                    LabeledContent(L10n.settingsHelper()) {
+                        switch protection.helperStatus {
+                        case .enabled, .requiresApproval:
+                            Button(L10n.settingsUnregisterHelper()) {
+                                Task { await protection.setHelperEnabled(false) }
+                            }
+                            .disabled(!protection.canQuit)
+                        case .notFound, .notRegistered:
+                            Text(L10n.settingsHelperNone()).foregroundStyle(.secondary)
+                        @unknown default:
+                            Text(L10n.permissionUnknown())
+                        }
+                    }
+                    if let failure = protection.helperChangeFailure {
+                        Text(failure).foregroundStyle(.secondary)
+                    }
+                }
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
                         Picker(L10n.settingsUnlockKey(), selection: customSelection) {
@@ -73,6 +92,10 @@ struct GeneralSettingsView: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 30)
             .padding(.bottom, 20)
+        }
+        .onAppear { protection.refreshHelperStatus() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            protection.refreshHelperStatus()
         }
         .frame(width: 520)
         .fixedSize()

@@ -1,7 +1,7 @@
 # Tenmaku
 
 Tenmaku is a lock app for macOS that prevents others from using your Mac while work is in progress.
-Claude and Codex can continue to control your Mac through Computer Use.
+Tenmaku is designed to keep Computer Use available while shielding.
 
 ![tenmaku usage image](https://github.com/user-attachments/assets/c27d23f0-f4b0-4e0a-8c90-b5f9b489b639)
 
@@ -12,7 +12,7 @@ Claude and Codex can continue to control your Mac through Computer Use.
 - A single display or multiple displays in extended mode.
 - Accessibility permission for Tenmaku to request the macOS screen lock.
 - If you use the optional privileged helper, approve it in Login Items and grant it Input Monitoring permission.
-- Without the helper, grant TenmakuInput Accessibility and Input Monitoring permissions. Tenmaku can start shielding in this mode only while Secure Event Input is inactive.
+- Grant TenmakuInput Accessibility and input monitoring access in both configurations. Without the helper, Tenmaku can start shielding only while Secure Event Input is inactive.
 
 Tenmaku may not work as expected outside the [tested environment](#tested-environment).
 
@@ -40,7 +40,8 @@ NOTARY_PROFILE=your-profile-name scripts/notarize.sh # Notarize, staple the tick
 | `Contents/MacOS/Tenmaku` | Menu bar UI and settings window |
 | `Contents/Library/Helpers/TenmakuGamma.app` | Agent that manages gamma shielding (`jp.pronama.tenmaku.gamma`) |
 | `Contents/Library/Helpers/TenmakuCover.app` | Agent that manages the shielding area (`jp.pronama.tenmaku.cover`) |
-| `Contents/Library/Helpers/TenmakuHelper.app` | Root daemon that blocks physical input (`jp.pronama.tenmaku.helper`) |
+| `Contents/Library/Helpers/TenmakuHelper.app` | Root daemon that blocks physical keyboards (`jp.pronama.tenmaku.helper`) |
+| `Contents/Library/Helpers/TenmakuInput.app` | Login-session agent that filters pointer events and handles keyboard input when running without the helper |
 
 ## Documentation
 
